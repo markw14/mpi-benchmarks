@@ -297,7 +297,7 @@ struct Bmark_descr {
         return result;
     }
 
-    smart_ptr<Scope> helper_init_scope(struct comm_info &c_info,
+    std::shared_ptr<Scope> helper_init_scope(struct comm_info &c_info,
                                        struct Bench* Bmark, GLOBALS &glob) {
         NPLenCombinedScope &scope = *(new NPLenCombinedScope);
         int len = 0;
@@ -385,7 +385,7 @@ struct Bmark_descr {
         }
         scope.add_nmodes(Bmark->N_Modes);
         scope.commit();
-        return smart_ptr<Scope>(&scope);
+        return std::shared_ptr<Scope>(&scope);
     }
 
     void IMB_init_buffers_iter(struct comm_info* c_info, struct iter_schedule* ITERATIONS,

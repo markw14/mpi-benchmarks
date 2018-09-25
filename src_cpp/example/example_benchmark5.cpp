@@ -104,12 +104,12 @@ class BenchmarkSuiteExample5 : public BenchmarkSuiteBase
         UNUSED(filter);
         result.push_back("example_bench5");
     }
-    virtual smart_ptr<Benchmark> create(const std::string &name) 
+    virtual std::shared_ptr<Benchmark> create(const std::string &name) 
     {  
         if (name == "example_bench5") {
-            return smart_ptr<Benchmark>(new ExampleBenchmark_5);
+            return std::shared_ptr<Benchmark>(new ExampleBenchmark_5);
         }
-        return smart_ptr<Benchmark>(NULL);
+        return std::shared_ptr<Benchmark>(NULL);
     }
     virtual const std::string get_name() const { return "example_suite5"; };
 };

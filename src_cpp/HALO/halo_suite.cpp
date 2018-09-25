@@ -206,8 +206,8 @@ template <> bool BenchmarkSuite<BS_GENERIC>::prepare(const args_parser &parser,
 }
 
 #define HANDLE_PARAMETER(TYPE, NAME) if (key == #NAME) { \
-                                        result = smart_ptr< TYPE >(&NAME); \
-                                        result.detach_ptr(); }
+                                        result = std::shared_ptr< TYPE >(&NAME, []( TYPE *){}); \
+                                     }
 
 
 template<> any BenchmarkSuite<BS_GENERIC>::get_parameter(const std::string &key) {

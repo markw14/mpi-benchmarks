@@ -54,7 +54,7 @@ goods and services.
 #include <map>
 #include <set>
 #include <iostream>
-#include "smart_ptr.h"
+#include <memory>
 #include "benchmark_suites_collection.h"
 #include "utils.h"
 #include "benchmark_suite.h"
@@ -72,7 +72,7 @@ using namespace std;
 
 #define BENCHMARK(BMRK_FN, BMRK_NAME) template class OriginalBenchmark<BenchmarkSuite<BS_EXT>, BMRK_FN>; \
 DECLARE_INHERITED_TEMPLATE(GLUE_TYPENAME(OriginalBenchmark<BenchmarkSuite<BS_EXT>, BMRK_FN>), BMRK_NAME) \
-template<> smart_ptr<Bmark_descr> OriginalBenchmark<BenchmarkSuite<BS_EXT>, BMRK_FN>::descr = NULL; \
+template<> std::shared_ptr<Bmark_descr> OriginalBenchmark<BenchmarkSuite<BS_EXT>, BMRK_FN>::descr = NULL; \
 template<> bool OriginalBenchmark<BenchmarkSuite<BS_EXT>, BMRK_FN>::init_description() 
 
 BENCHMARK(IMB_window, Window)

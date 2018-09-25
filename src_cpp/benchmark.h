@@ -47,7 +47,7 @@ goods and services.
 */
 
 #pragma once
-#include "smart_ptr.h"
+#include <memory>
 #include "scope.h"
 #include <iostream>
 
@@ -66,12 +66,12 @@ class Benchmark {
         virtual void finalize() { }
         virtual bool is_default() { return true; }
         virtual std::vector<std::string> get_comments() { return std::vector<std::string>(0); }
-        smart_ptr<Scope> get_scope() { if (scope.get() == NULL) { scope.assign(new Scope); scope->commit(); } return scope; }
+        std::shared_ptr<Scope> get_scope() { if (scope.get() == NULL) { scope.reset(new Scope); scope->commit(); } return scope; }
         virtual ~Benchmark() { }
         bool initialized;
         BenchmarkSuiteBase *suite;
     protected:
-        smart_ptr<Scope> scope;
+        std::shared_ptr<Scope> scope;
     private:
         Benchmark &operator=(const Benchmark &) { return *this; }
         Benchmark(const Benchmark &) {}

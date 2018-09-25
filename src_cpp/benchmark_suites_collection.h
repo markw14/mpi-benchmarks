@@ -128,9 +128,9 @@ class BenchmarkSuitesCollection {
         }
         return true;
     }
-    static smart_ptr<Benchmark> create(const std::string &name) {
+    static std::shared_ptr<Benchmark> create(const std::string &name) {
         assert(pnames != NULL);
-        smart_ptr<Benchmark> b;
+        std::shared_ptr<Benchmark> b;
         for (std::map<const std::string, BenchmarkSuiteBase*>::iterator it = pnames->begin();
              it != pnames->end(); ++it) {
             b = it->second->create(name);

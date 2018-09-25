@@ -53,8 +53,8 @@ goods and services.
 #include <fstream>
 #include <algorithm>
 
-#include "smart_ptr.h"
-#include "args_parser.h"
+#include <memory>
+#include "argsparser/argsparser.h"
 #include "benchmark.h"
 #include "benchmark_suites_collection.h"
 #include "utils.h"
@@ -215,7 +215,7 @@ int main(int argc, char * *argv)
                 output << sn << ":" << endl;
                 for (set<string>::iterator it_b = benchmarks.begin(); 
                      it_b != benchmarks.end(); ++it_b) {
-                    smart_ptr<Benchmark> b = BenchmarkSuitesCollection::create(*it_b);
+                    std::shared_ptr<Benchmark> b = BenchmarkSuitesCollection::create(*it_b);
                     string bn = b->get_name();
                     vector<string> comments = b->get_comments();
                     output << "    " << bn;
@@ -319,31 +319,31 @@ int main(int argc, char * *argv)
         }
 
         // 2. All benchmarks wrappers constructors, initializers and scope definition
-        typedef pair<smart_ptr<Benchmark>, smart_ptr<Scope> > item;
+        typedef pair<std::shared_ptr<Benchmark>, std::shared_ptr<Scope> > item;
         typedef vector<item> running_sequence;
         running_sequence sequence;
         for (vector<string>::iterator it = benchmarks_to_run.begin(); 
              it != benchmarks_to_run.end(); ++it) {
-            smart_ptr<Benchmark> b = BenchmarkSuitesCollection::create(*it);
+            std::shared_ptr<Benchmark> b = BenchmarkSuitesCollection::create(*it);
             if (b.get() == NULL) {
                 throw logic_error("benchmark creator failed!");
             }
             b->init();
-            smart_ptr<Scope> scope = b->get_scope();
+            std::shared_ptr<Scope> scope = b->get_scope();
             sequence.push_back(item(b, scope));
         }
 
         // 3. Actual running cycle
         for (running_sequence::iterator it = sequence.begin(); it != sequence.end(); ++it) {
-            smart_ptr<Benchmark> &b = it->first;
-            smart_ptr<Scope> &scope = it->second;
+            std::shared_ptr<Benchmark> &b = it->first;
+            std::shared_ptr<Scope> &scope = it->second;
             for (Scope::iterator s = scope->begin(); s != scope->end(); ++s)
                 b->run(*s);
         }
 
         // 4. Finalize cycle
         for (running_sequence::iterator it = sequence.begin(); it != sequence.end(); ++it) {
-            smart_ptr<Benchmark> &b = it->first;
+            std::shared_ptr<Benchmark> &b = it->first;
             b->finalize();
         }
 

@@ -50,7 +50,7 @@ goods and services.
 
 #pragma once
 #include <typeinfo>
-#include "smart_ptr.h"
+#include <memory>
 
 class any
 {
@@ -64,16 +64,16 @@ class any
     template <class type>
     struct holder : holder_base
     {
-        smart_ptr<type> storedObject;
-        holder(smart_ptr<type> pobject) : storedObject(pobject) {}
+        std::shared_ptr<type> storedObject;
+        holder(std::shared_ptr<type> pobject) : storedObject(pobject) {}
         virtual void *get() const { return storedObject.get(); }
         virtual const std::type_info &get_type_id() const { return typeid(type); }
     };
-    smart_ptr<holder_base> held;
+    std::shared_ptr<holder_base> held;
 public:
     any() {}
     template <class type>
-    any(smart_ptr<type> objectToStore) : held(new holder<type>(objectToStore))
+    any(std::shared_ptr<type> objectToStore) : held(new holder<type>(objectToStore))
   {}
     template <class type>
     type *as() const { 
@@ -84,7 +84,6 @@ public:
         else 
             return NULL;
     }
-    void detach_ptr() { held.detach(); }
 };
 
 
@@ -107,10 +106,10 @@ struct B
 int main()
 {
     std::vector<any> collection(4);
-    collection[0] = smart_ptr<A>(new A);
-    collection[1] = smart_ptr<B>(new B);
-    collection[2] = smart_ptr<A>(new A);
-    collection[3] = smart_ptr<A>(new A);
+    collection[0] = std::shared_ptr<A>(new A);
+    collection[1] = std::shared_ptr<B>(new B);
+    collection[2] = std::shared_ptr<A>(new A);
+    collection[3] = std::shared_ptr<A>(new A);
     for (size_t i = 0; i < collection.size(); i++) {
         A *A_ptr = collection[i].as<A>();
         B *B_ptr = collection[i].as<B>();

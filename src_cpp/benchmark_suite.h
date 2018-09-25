@@ -50,7 +50,8 @@ goods and services.
 
 #pragma once
 
-#include "smart_ptr.h"
+#include <memory>
+#include <stdexcept>
 #include "any.h"
 
 template <benchmark_suite_t bs>
@@ -73,7 +74,7 @@ class BenchmarkSuite : public BenchmarkSuiteBase {
             std::set<std::string> benchs;
             get_full_list(benchs);
             for (std::set<std::string>::iterator it = benchs.begin(); it != benchs.end(); ++it) {
-                smart_ptr<Benchmark> b = get_instance().create(*it);
+                std::shared_ptr<Benchmark> b = get_instance().create(*it);
                 if (!b->init_description())
                     throw std::logic_error("BenchmarkSuite: wrong description of one of benchmarks in suite");
             }
@@ -98,7 +99,7 @@ class BenchmarkSuite : public BenchmarkSuiteBase {
         static void get_full_list(std::vector<std::string> &all_benchmarks) {
             get_instance().do_get_full_list(all_benchmarks);
         }
-        virtual smart_ptr<Benchmark> create(const std::string &s) { return get_instance().do_create(s); }
+        virtual std::shared_ptr<Benchmark> create(const std::string &s) { return get_instance().do_create(s); }
         virtual any get_parameter(const std::string &key) { UNUSED(key); return any(); }
         
     protected:
@@ -114,14 +115,14 @@ class BenchmarkSuite : public BenchmarkSuiteBase {
                 names_list.push_back(name);
             }
         }
-        smart_ptr<Benchmark> do_create(const std::string &s) {
+        std::shared_ptr<Benchmark> do_create(const std::string &s) {
             if (pnames == NULL) {
                 pnames = new pnames_t();
             }
             const Benchmark *elem = (*pnames)[s];
             if (elem == NULL)
-                return smart_ptr<Benchmark>((Benchmark *)0);
-            return smart_ptr<Benchmark>(elem->create_myself());
+                return std::shared_ptr<Benchmark>((Benchmark *)0);
+            return std::shared_ptr<Benchmark>(elem->create_myself());
         }
         template <typename T>
         void do_get_full_list(T &all_benchmarks) {

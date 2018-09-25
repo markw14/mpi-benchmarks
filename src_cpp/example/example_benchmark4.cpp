@@ -110,8 +110,8 @@ namespace example_suite4 {
     }
 
 #define HANDLE_PARAMETER(TYPE, NAME) if (key == #NAME) { \
-                                        result = smart_ptr< TYPE >(&NAME); \
-                                        result.detach_ptr(); }
+                                        result = std::shared_ptr< TYPE >(&NAME, []( TYPE *){}); \
+                                     }
 
 #define GET_PARAMETER(TYPE, NAME) TYPE *p_##NAME = suite->get_parameter(#NAME).as< TYPE >(); \
                                   assert(p_##NAME != NULL); \

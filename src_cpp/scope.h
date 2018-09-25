@@ -147,7 +147,7 @@ struct NPLenCombinedScope : public Scope {
         for (size_t i = 0; i < nps.size(); i++) {
             for (size_t k = 0; k < nmodes; k++) {
                 for (size_t j = 0; j < lens.size(); j++) {
-                    any mode = smart_ptr<int>(new int(k));
+                    any mode = std::shared_ptr<int>(new int(k));
                     sequence.push_back(scope_item(nps[i], lens[j], mode));
                 }
             }

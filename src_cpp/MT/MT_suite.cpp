@@ -56,7 +56,7 @@ goods and services.
 #include <map>
 #include <stdio.h>
 #include "benchmark.h"
-#include "args_parser.h"
+#include "argsparser/argsparser.h"
 #include "utils.h"
 #include "benchmark_suites_collection.h"
 #include "benchmark_suite.h"
@@ -208,8 +208,8 @@ template <> void BenchmarkSuite<BS_MT>::finalize(const std::vector<std::string> 
 }
 
 #define HANDLE_PARAMETER(TYPE, NAME) if (key == #NAME) { \
-                                        result = smart_ptr< TYPE >(&NAME); \
-                                        result.detach_ptr(); }
+                                        result = std::shared_ptr< TYPE >(&NAME, []( TYPE *){}); \
+                                     }
 
 template <> any BenchmarkSuite<BS_MT>::get_parameter(const std::string &key)
 {

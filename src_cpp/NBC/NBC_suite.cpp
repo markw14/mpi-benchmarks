@@ -526,7 +526,7 @@ template <> void BenchmarkSuite<BS_NBC>::finalize(const vector<string> &benchs,
     if (!prepared)
         return;
     for (vector<string>::const_iterator it = benchs.begin(); it != benchs.end(); ++it) {
-        smart_ptr<Benchmark> b = get_instance().create(*it);
+        std::shared_ptr<Benchmark> b = get_instance().create(*it);
         if (b.get() == NULL) 
             continue;
         // do nothing
@@ -541,7 +541,7 @@ template <> void BenchmarkSuite<BS_NBC>::get_bench_list(set<string> &benchs,
     BenchmarkSuite<BS_NBC>::get_full_list(benchs);
     if (filter == BenchmarkSuiteBase::DEFAULT_BENCHMARKS) {
         for (set<string>::iterator it = benchs.begin(); it != benchs.end(); ++it) {
-            smart_ptr<Benchmark> b = get_instance().create(*it);
+            std::shared_ptr<Benchmark> b = get_instance().create(*it);
             if (b.get() == NULL)            
                 continue;
             if (!b->is_default()) 
@@ -557,7 +557,7 @@ template <> void BenchmarkSuite<BS_NBC>::get_bench_list(vector<string> &benchs,
         return;
     if (filter == BenchmarkSuiteBase::DEFAULT_BENCHMARKS) {
         for (size_t i = benchs.size() - 1; i != 0; i--) {
-            smart_ptr<Benchmark> b = get_instance().create(benchs[i]);
+            std::shared_ptr<Benchmark> b = get_instance().create(benchs[i]);
             if (b.get() == NULL) {
                 continue;
             }
@@ -568,8 +568,8 @@ template <> void BenchmarkSuite<BS_NBC>::get_bench_list(vector<string> &benchs,
 }
 
 #define HANDLE_PARAMETER(TYPE, NAME) if (key == #NAME) { \
-                                        result = smart_ptr< TYPE >(&NAME); \
-                                        result.detach_ptr(); }
+                                        result = std::shared_ptr< TYPE >(&NAME, []( TYPE *){}); \
+                                     }
 
 
 template<> any BenchmarkSuite<BS_NBC>::get_parameter(const std::string &key) {

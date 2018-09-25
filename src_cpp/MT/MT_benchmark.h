@@ -58,6 +58,9 @@ goods and services.
 
 #include "benchmark.h"
 
+#include "yaml-cpp/yaml.h"
+#include <fstream>
+
 using namespace std;
 
 #define GLUE_TYPENAME(A,B) A,B
@@ -251,6 +254,8 @@ class BenchmarkMTBase : public Benchmark {
     bool do_checks;
     double time_avg, time_min, time_max;
     int world_rank, world_size;
+    YAML::Emitter yaml_out;
+    bool yaml_header;
     public:
     virtual void init_flags() {}
     virtual void run_instance(thread_local_data_t *input, int count, double &t, int &result) {
@@ -335,7 +340,7 @@ class BenchmarkMTBase : public Benchmark {
         MPI_Type_size(datatype, &idts);
         datatype_size = idts;
         VarLenScope *sc = new VarLenScope(count);
-        scope = sc;
+        scope.reset(sc);
 
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -386,7 +391,10 @@ class BenchmarkMTBase : public Benchmark {
                 idata[idata.size()-1]->collective_vector.displs = (int *)malloc(world_size * sizeof(int));
             }        
         }
-  }
+//        yaml_out << YAML::BeginDoc;
+        yaml_out << YAML::BeginMap;
+        yaml_header = true;
+    }
     virtual void run(const scope_item &item) { 
         static int ninvocations = 0;
         double t, tavg = 0, tmin = 1e6, tmax = 0; 
@@ -448,6 +456,18 @@ class BenchmarkMTBase : public Benchmark {
                     if (flags.count(OUT_MSGRATE)) cout << out_field("Msg/sec");
                     if (flags.count(OUT_MSGRATE_CUMMULATIVE)) cout << out_field("Msg/sec");
                     cout << endl;
+                    if (yaml_header) {
+                        yaml_header = false;
+                    } else {
+                        yaml_out << YAML::EndMap << YAML::EndMap;
+                    }
+                    if (flags.count(OUT_TIME_MAX)) {
+                        yaml_out << YAML::Key << get_name() << YAML::Value;
+                        yaml_out << YAML::BeginMap << YAML::Key << "Latency" << YAML::Value << YAML::Flow << YAML::BeginMap;
+                    } else if (flags.count(OUT_BW) || flags.count(OUT_BW_CUMULATIVE)) {
+                        yaml_out << YAML::Key << get_name() << YAML::Value;
+                        yaml_out << YAML::BeginMap << YAML::Key << "Bandwidth" << YAML::Value << YAML::Flow << YAML::BeginMap;
+                    }
                 }
                 // NOTE: since we do weak scalability measurements, multiply the amount of data
                 size_t real_size = item.len * datatype_size * num_threads;
@@ -461,6 +481,15 @@ class BenchmarkMTBase : public Benchmark {
                 if (flags.count(OUT_MSGRATE)) cout << out_field((int)(1.0 / time_avg));
                 if (flags.count(OUT_MSGRATE_CUMMULATIVE)) cout << out_field((int)((double)(nresults / 2) / time_avg));
                 cout << endl;
+                if (flags.count(OUT_TIME_MAX)) {
+                    yaml_out << YAML::Key << real_size << YAML::Value 
+                             << (1e6 * time_max);
+                } else if (flags.count(OUT_BW) || flags.count(OUT_BW_CUMULATIVE)) {
+                    yaml_out << YAML::Key << (real_size) << YAML::Value 
+                                 << (flags.count(OUT_BW) ? 
+                                        ((double)real_size * bw_multiplier / time_max / 1e6) : 
+                                        ((double)real_size / (double)num_threads * bw_multiplier * (double)(nresults / 2) / time_max / 1e6));
+                }
             }
             else {
                 if (ninvocations++ == 0) {
@@ -470,6 +499,13 @@ class BenchmarkMTBase : public Benchmark {
                     cout << "# NO SUCCESSFUL EXECUTIONS" << endl;
                     cout << "#-----------------------------------------------------------------------------" << endl;
                     cout << endl;
+                    if (flags.count(OUT_TIME_MAX)) {
+                        yaml_out << YAML::Key << get_name() << YAML::Value;
+                        yaml_out << YAML::Flow << YAML::BeginMap << YAML::Key << "Latency" << YAML::Value << YAML::BeginMap;
+                    } else if (flags.count(OUT_BW) || flags.count(OUT_BW_CUMULATIVE)) {
+                        yaml_out << YAML::Key << get_name() << YAML::Value;
+                        yaml_out << YAML::Flow << YAML::BeginMap << YAML::Key << "Bandwidth" << YAML::Value << YAML::BeginMap;
+                    }
                 }
             }
         }
@@ -481,8 +517,13 @@ class BenchmarkMTBase : public Benchmark {
                free(idata[thread_num]->collective_vector.displs);
             }
         }
+        yaml_out << YAML::EndMap << YAML::EndMap << YAML::Newline;
+        yaml_out << YAML::EndMap;
+        std::ofstream of("test_out.yaml", std::ios::app);
+        of << yaml_out.c_str();
     }
 };
+
 template <class bs, mt_benchmark_func_t fn_ptr>
 class BenchmarkMT : public BenchmarkMTBase<bs, fn_ptr> {
     public:

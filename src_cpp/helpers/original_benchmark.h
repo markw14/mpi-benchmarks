@@ -72,7 +72,7 @@ extern "C" { void IMB_Barrier(MPI_Comm comm); }
 template <class bs, original_benchmark_func_t fn_ptr>
 class OriginalBenchmark : public Benchmark {
     protected:
-        static smart_ptr<Bmark_descr> descr;
+        static std::shared_ptr<Bmark_descr> descr;
         comm_info c_info;
         iter_schedule ITERATIONS;
         MODES BMODE;
