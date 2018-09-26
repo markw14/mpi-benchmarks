@@ -55,6 +55,7 @@ goods and services.
 #include <string>
 #include <map>
 #include <stdio.h>
+#include <fstream>
 #include "benchmark.h"
 #include "argsparser/argsparser.h"
 #include "utils.h"
@@ -64,6 +65,8 @@ goods and services.
 
 #include "MT_types.h"
 
+#define GLUE_TYPENAME2(A,B) A,B
+
 namespace NS_MT {
     std::vector<thread_local_data_t> input;
     int mode_multiple;
@@ -72,12 +75,17 @@ namespace NS_MT {
     int rank;
     bool prepared = false;
     std::vector<int> count;
+    std::map<int, int> count_and_repeat;
     int malloc_align;
     malopt_t malloc_option;
     barropt_t barrier_option;
     bool do_checks;
     MPI_Datatype datatype;
     bool noheader;
+    bool do_yaml_out;
+    std::string yaml_out_file;
+    YAML::Emitter yaml_out;
+    std::ofstream yaml_of;
 }
 
 
@@ -93,11 +101,14 @@ template <> bool BenchmarkSuite<BS_MT>::declare_args(args_parser &parser,
     parser.add<std::string>("barrier", "on").set_caption("on|off|special");
     parser.add_vector<int>("count", "1,2,4,8").
         set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING);
+    parser.add_vector<std::string>("count_and_repeat", "").
+        set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING);
     parser.add<int>("malloc_align", 64);
     parser.add<std::string>("malloc_algo", "serial").set_caption("serial|continuous|parallel");
     parser.add<bool>("check", false);
     parser.add_flag("noheader");
     parser.add<std::string>("datatype", "int").set_caption("int|char");
+    parser.add<std::string>("output", "").set_caption("YAML output file name");
     parser.set_default_current_group();
     return true;
 }
@@ -134,6 +145,20 @@ template <> bool BenchmarkSuite<BS_MT>::prepare(const args_parser &parser,
         return true;
 
     parser.get<int>("count", count);
+
+    std::vector<std::string> count_and_repeat_str; 
+    parser.get<std::string>("count_and_repeat", count_and_repeat_str);
+    if (count_and_repeat_str.size() != 0) {
+        for (const auto &str : count_and_repeat_str) {
+            std::vector<int> cnt_and_rep;  
+            if (!parser.parse_special_vec<int>(str.c_str(), cnt_and_rep, ':', 2, 2)) {
+                output << get_name() << ": " << "Wrong 'count_and_repeat' option syntax" << std::endl;
+                return false;
+            }
+            count_and_repeat[cnt_and_rep[0]] = cnt_and_rep[1];
+        }
+    }
+
     mode_multiple = (parser.get<std::string>("thread_level") == "multiple");
     stride = parser.get<int>("stride");
     
@@ -163,6 +188,9 @@ template <> bool BenchmarkSuite<BS_MT>::prepare(const args_parser &parser,
     do_checks = parser.get<bool>("check");
 
     noheader = parser.get<bool>("noheader");
+
+    yaml_out_file = parser.get<std::string>("output");
+    do_yaml_out = (yaml_out_file.size() != 0);
 
     std::string dt = parser.get<std::string>("datatype");
     if (dt == "int") datatype = MPI_INT;
@@ -197,6 +225,11 @@ template <> bool BenchmarkSuite<BS_MT>::prepare(const args_parser &parser,
         output << "#---------------------------------------------------------" << std::endl;
         output << "#" << std::endl;
     }
+    if (do_yaml_out) {
+        yaml_of.open(yaml_out_file.c_str(), std::ios::out | std::ios::trunc);
+        yaml_out << YAML::BeginDoc;
+        yaml_out << YAML::BeginMap;
+    }
     return true;
 }
 
@@ -205,6 +238,11 @@ template <> void BenchmarkSuite<BS_MT>::finalize(const std::vector<std::string> 
     using namespace NS_MT;
     if (prepared && rank == 0)
         output << std::endl;
+    if (do_yaml_out) {
+        yaml_out << YAML::EndMap;
+        yaml_of << yaml_out.c_str();
+        yaml_of.close();
+    }
 }
 
 #define HANDLE_PARAMETER(TYPE, NAME) if (key == #NAME) { \
@@ -225,6 +263,9 @@ template <> any BenchmarkSuite<BS_MT>::get_parameter(const std::string &key)
     HANDLE_PARAMETER(bool, do_checks);
     HANDLE_PARAMETER(MPI_Datatype, datatype);
     HANDLE_PARAMETER(std::vector<int>, count);
+    HANDLE_PARAMETER(GLUE_TYPENAME2(std::map<int, int>), count_and_repeat);
+    HANDLE_PARAMETER(bool, do_yaml_out);
+    HANDLE_PARAMETER(YAML::Emitter, yaml_out);
     return result;
 }
 

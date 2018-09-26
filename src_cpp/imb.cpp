@@ -339,15 +339,10 @@ int main(int argc, char * *argv)
             std::shared_ptr<Scope> &scope = it->second;
             for (Scope::iterator s = scope->begin(); s != scope->end(); ++s)
                 b->run(*s);
-        }
-
-        // 4. Finalize cycle
-        for (running_sequence::iterator it = sequence.begin(); it != sequence.end(); ++it) {
-            std::shared_ptr<Benchmark> &b = it->first;
             b->finalize();
         }
 
-        // 5. Final steps on suite-level
+        // 4. Final steps on suite-level
         BenchmarkSuitesCollection::finalize(benchmarks_to_run, output);
         if (rank == 0) {
            cout << output.str();
