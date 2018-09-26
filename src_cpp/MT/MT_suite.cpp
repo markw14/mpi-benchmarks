@@ -149,6 +149,9 @@ template <> bool BenchmarkSuite<BS_MT>::prepare(const args_parser &parser,
     std::vector<std::string> count_and_repeat_str; 
     parser.get<std::string>("count_and_repeat", count_and_repeat_str);
     if (count_and_repeat_str.size() != 0) {
+        if (parser.is_option_defaulted("count")) {
+            count.erase(count.begin(), count.end());
+        }
         for (const auto &str : count_and_repeat_str) {
             std::vector<int> cnt_and_rep;  
             if (!parser.parse_special_vec<int>(str.c_str(), cnt_and_rep, ':', 2, 2)) {
@@ -158,6 +161,18 @@ template <> bool BenchmarkSuite<BS_MT>::prepare(const args_parser &parser,
             count_and_repeat[cnt_and_rep[0]] = cnt_and_rep[1];
         }
     }
+
+    std::vector<int> count_additional, count_merged;
+    count_additional.reserve(count_and_repeat.size());
+    for (auto const &c : count_and_repeat)
+        count_additional.push_back(c.first);
+
+    std::sort(count.begin(), count.end());
+    std::sort(count_additional.begin(), count_additional.end());
+    std::merge(count.begin(), count.end(), count_additional.begin(), count_additional.end(), 
+               std::back_inserter(count_merged));
+    count_merged.erase(std::unique(count_merged.begin(), count_merged.end()), count_merged.end());
+    count = count_merged;
 
     mode_multiple = (parser.get<std::string>("thread_level") == "multiple");
     stride = parser.get<int>("stride");

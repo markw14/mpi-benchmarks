@@ -269,6 +269,9 @@ class BenchmarkMTBase : public Benchmark {
     virtual void run_instance(thread_local_data_t *input, int count, double &t, int &result) {
         MPI_Comm comm = input->comm;
         int warmup = input->warmup, repeat = input->repeat;
+//        if (count_and_repeat.find(count) != count_and_repeat.end()) {
+//            repeat = count_and_repeat[count];
+//        }
         if (repeat <= 0) return;
         int rank, size;
         MPI_Comm_rank(comm, &rank);
@@ -410,7 +413,15 @@ class BenchmarkMTBase : public Benchmark {
     virtual void run(const scope_item &item) { 
         static int ninvocations = 0;
         double t, tavg = 0, tmin = 1e6, tmax = 0; 
-        int nresults = 0;
+        int nresults = 0, saved_repeat = input[0].repeat;
+        if (count_and_repeat.find(item.len) != count_and_repeat.end()) {
+            if (mode_multiple) {
+            #pragma omp parallel default(shared)
+                input[omp_get_thread_num()].repeat = count_and_repeat[item.len];
+            } else {
+                input[0].repeat = count_and_repeat[item.len];
+            }
+        }
         if (mode_multiple) {
         #pragma omp parallel default(shared)
             {
@@ -525,6 +536,14 @@ class BenchmarkMTBase : public Benchmark {
                         }
                     }
                 }
+            }
+        }
+        if (count_and_repeat.find(item.len) != count_and_repeat.end()) {
+            if (mode_multiple) {
+            #pragma omp parallel default(shared)
+                input[omp_get_thread_num()].repeat = saved_repeat;
+            } else {
+                input[0].repeat = saved_repeat;;
             }
         }
     }
