@@ -88,7 +88,7 @@ class OriginalBenchmark : public Benchmark {
         virtual void allocate_internals() {
             BMark[0].name = NULL;
             if (descr.get() == NULL)
-                descr = new Bmark_descr;
+                descr.reset(new Bmark_descr);
         }
         virtual bool init_description();
         virtual void init() {

@@ -71,8 +71,7 @@ namespace example_suite2 {
     class ExampleBenchmark_2 : public Benchmark {
         public:
         virtual void init() {
-            VarLenScope *sc = new VarLenScope(0, 22);
-            scope = sc;
+            scope = std::make_shared<VarLenScope>(0, 22);
         }
         virtual void run(const scope_item &item) { 
             cout << get_name() << ": Hello world! size=" << item.len << endl;

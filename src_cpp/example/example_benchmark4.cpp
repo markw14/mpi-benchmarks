@@ -59,7 +59,7 @@ goods and services.
 #include "benchmark_suites_collection.h"
 #include "scope.h"
 #include "utils.h"
-#include "args_parser.h"
+#include "argsparser.h"
 
 using namespace std;
 
@@ -133,8 +133,7 @@ namespace example_suite4 {
         virtual void init() {
             GET_PARAMETER(vector<int>, len);
             GET_PARAMETER(MPI_Datatype, datatype);
-            VarLenScope *sc = new VarLenScope(len);
-            scope = sc;
+            scope = std::make_shared<VarLenScope>(len);
             int idts;
             MPI_Type_size(datatype, &idts);
             rbuf = (char *)malloc((size_t)scope->get_max_len() * (size_t)idts);

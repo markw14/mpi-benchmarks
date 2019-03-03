@@ -59,7 +59,7 @@ goods and services.
 #include "utils.h"
 #include "benchmark.h"
 #include "benchmark_suites_collection.h"
-#include "args_parser.h"
+#include "argsparser.h"
 
 namespace ndim_halo_benchmark {
 

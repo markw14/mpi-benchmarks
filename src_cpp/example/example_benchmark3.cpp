@@ -77,8 +77,7 @@ namespace example_suite3 {
         int np, rank;
         public:
         virtual void init() {
-            VarLenScope *sc = new VarLenScope(0, 22);
-            scope = sc;
+            scope = std::make_shared<VarLenScope>(0, 22);
             rbuf = (char *)malloc(1 << 22);
             sbuf = (char *)malloc(1 << 22);
         }
