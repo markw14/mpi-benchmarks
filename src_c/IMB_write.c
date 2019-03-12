@@ -253,7 +253,7 @@ void IMB_write_ij(struct comm_info* c_info, int size, POSITIONING pos,
     MPI_Status stat;
     MPI_Offset Offset;
 
-    ierr = 0;
+    int ierr = 0;
 
     *time = 0.;
     if (c_info->File_rank >= 0) {
@@ -383,7 +383,7 @@ void IMB_iwrite_ij(struct comm_info* c_info, int size, POSITIONING pos,
     MPI_Status*  STAT, stat;
     MPI_Request* REQUESTS;
 
-    ierr = 0;
+    int ierr = 0;
 
     *time = 0;
 

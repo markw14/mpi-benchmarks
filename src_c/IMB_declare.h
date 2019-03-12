@@ -191,8 +191,11 @@ extern double *all_defect;
 #define A_ABS(x) fabs((x))
 #endif
 
-static int asize = (int) sizeof(assign_type);
+
+#define asize  ((int) sizeof(assign_type))
+/*
 static int ierr;
+*/
 
 typedef enum {
     MIN = 0,        // Min time by ranks

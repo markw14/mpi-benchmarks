@@ -49,7 +49,7 @@ goods and services.
 */
 
 #if defined RMA || defined NBC || defined MPIIO || defined EXT
-#error Legacy benchmark components can't be linked together
+#error Legacy benchmark components cannot be linked together
 #endif
 
 #include <set>
@@ -658,13 +658,6 @@ template <> bool BenchmarkSuite<BS_MPI1>::prepare(const args_parser &parser, con
     }
 
 #endif
-
-#if BASIC_INPUT_EXPERIMENT == 0
-    struct Bench *BList;
-    char *argv[] = { "" };
-    int argc = 0;
-    IMB_basic_input(&c_info, &BList, &ITERATIONS, &argc, (char ***)argv, &glob.NP_min);
-#endif    
 
     if (c_info.w_rank == 0 ) {
         IMB_general_info();

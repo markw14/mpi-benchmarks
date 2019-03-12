@@ -134,7 +134,7 @@ Output variables:
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /*  GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->red_data_type, &s_size);
@@ -195,7 +195,7 @@ void IMB_ireduce_scatter(struct comm_info* c_info,
 
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /* GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->red_data_type, &s_size);
@@ -283,7 +283,7 @@ void IMB_ireduce_scatter_pure(struct comm_info* c_info,
 
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /* GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->red_data_type, &s_size);

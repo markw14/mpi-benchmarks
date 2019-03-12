@@ -304,7 +304,7 @@ Output variables:
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     *time = 0.;
 
@@ -428,7 +428,7 @@ void IMB_iread_ij(struct comm_info* c_info, int size, POSITIONING pos,
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     *time = 0.;
 

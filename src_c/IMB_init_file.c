@@ -331,7 +331,7 @@ In/out variables:
         if (c_info->filename != (char*)NULL) {
             if (c_info->File_rank == 0) {
                 // touch file
-                ierr = MPI_File_open(MPI_COMM_SELF, c_info->filename,
+                int ierr = MPI_File_open(MPI_COMM_SELF, c_info->filename,
                                      c_info->amode, MPI_INFO_NULL, &c_info->fh);
 
                 if (c_info->fh != MPI_FILE_NULL)
@@ -360,8 +360,7 @@ Return value          (type int)
                       Error code (identical with MPI error code if occurs)
 
 */
-    int ierr;
-    ierr = 0;
+    int ierr = 0;
     if (c_info->File_comm != MPI_COMM_NULL) {
         ierr = MPI_File_open(c_info->File_comm, c_info->filename,
                              c_info->amode, c_info->info, &c_info->fh);

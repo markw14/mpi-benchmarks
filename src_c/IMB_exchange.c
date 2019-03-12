@@ -121,16 +121,16 @@ Output variables:
     int  i;
 
     Type_Size s_size, r_size;
-    int s_num, r_num;
+    int s_num = 0, r_num = 0;
     int s_tag, r_tag;
-    int left, right;
+    int left = 0, right = 0;
     MPI_Status  stat[2];
     MPI_Request request[2];
 
 #ifdef CHECK
     defect = 0;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /*GET SIZE OF DATA TYPE's in s_size and r_size*/
     MPI_Type_size(c_info->s_data_type, &s_size);

@@ -165,7 +165,7 @@ Input variables:
     const int DO_OUT = (c_info->w_rank == 0) ? 1 : 0;
     const int GROUP_OUT = (c_info->group_mode > 0) ? 1 : 0;
 
-    ierr = 0;
+    int ierr = 0;
 
     if (DO_OUT) {
         /* Fix IMB_1.0.1: NULL all_times before allocation */

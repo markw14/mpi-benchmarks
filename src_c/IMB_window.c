@@ -111,7 +111,7 @@ Output variables:
     double t1, t2;
     int    i, dum;
 
-    ierr = 0;
+    int ierr = 0;
 
     if (c_info->rank != -1) {
         for (i = 0; i < N_BARR; i++)

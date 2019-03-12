@@ -125,7 +125,7 @@ Output variables:
     int    i, dum;
     MPI_Status stat;
 
-    ierr = 0;
+    int ierr = 0;
 
     if (c_info->rank != -1) {
         for (i = 0; i < N_BARR; i++)

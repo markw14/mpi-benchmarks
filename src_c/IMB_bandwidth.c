@@ -106,7 +106,7 @@ Output variables:
     int i;
 
     Type_Size s_size, r_size;
-    int s_num, r_num;
+    int s_num = 0, r_num = 0;
     int s_tag, r_tag;
     int dest, source;
     MPI_Status stat;
@@ -114,7 +114,7 @@ Output variables:
 
     int ws, peers;
     char ack;
-    ierr = 0;
+    int ierr = 0;
 
     MPI_Type_size(c_info->s_data_type, &s_size);
     MPI_Type_size(c_info->r_data_type, &r_size);
@@ -173,6 +173,7 @@ Output variables:
     }
     t2 = MPI_Wtime();
     *time = (t2 - t1) / ITERATIONS->n_sample;
+    (void)ierr;
 }
 
 void IMB_bi_bandwidth(struct comm_info* c_info, int size,  struct iter_schedule* ITERATIONS,
@@ -222,7 +223,7 @@ Output variables:
 
     int ws, peers;
     char ack;
-    ierr = 0;
+    int ierr = 0;
 
     MPI_Type_size(c_info->s_data_type, &s_size);
     MPI_Type_size(c_info->r_data_type, &r_size);
@@ -298,5 +299,5 @@ Output variables:
     }
     t2 = MPI_Wtime();
     *time = (t2 - t1) / ITERATIONS->n_sample;
-
+    (void)ierr;
 }

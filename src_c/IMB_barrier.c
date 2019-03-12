@@ -125,7 +125,7 @@ Output variables:
     double t1, t2;
     int    i;
 
-    ierr = 0;
+    int ierr = 0;
 
     if (c_info->rank != -1) {
         IMB_do_n_barriers(c_info->communicator, N_BARR);
@@ -161,7 +161,7 @@ void IMB_ibarrier(struct comm_info* c_info,
 #ifdef CHECK
     defect=0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     if(c_info->rank != -1) {
         IMB_ibarrier_pure(c_info, size, ITERATIONS, RUN_MODE, &t_pure);
@@ -206,7 +206,7 @@ void IMB_ibarrier_pure(struct comm_info* c_info,
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     if (c_info->rank != -1) {
         IMB_do_n_barriers (c_info->communicator, N_BARR);

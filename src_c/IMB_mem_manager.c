@@ -764,7 +764,7 @@ In/out variables:
         int acc_rep_test, t_sample;
         int selected_n_sample = ITERATIONS->n_sample;
 
-        memset(time, 0, MAX_TIME_ID);
+        memset(time, 0, MAX_TIME_ID * sizeof(double));
         if (iter == 0 || BMODE->type == Sync) {
             ITERATIONS->n_sample_prev = ITERATIONS->msgspersample;
             if (c_info->n_lens > 0) {
@@ -783,7 +783,7 @@ In/out variables:
 
 #ifdef MPIIO
         if (Bmark->access != no) {
-            ierr = MPI_File_seek(c_info->fh, 0, MPI_SEEK_SET);
+            int ierr = MPI_File_seek(c_info->fh, 0, MPI_SEEK_SET);
             MPI_ERRHAND(ierr);
 
             if (Bmark->fpointer == shared) {
@@ -817,7 +817,7 @@ In/out variables:
             time[1] = time[0];
 #ifdef MPIIO
             if (Bmark->access != no) {
-                ierr = MPI_File_seek(c_info->fh, 0, MPI_SEEK_SET);
+                int ierr = MPI_File_seek(c_info->fh, 0, MPI_SEEK_SET);
                 MPI_ERRHAND(ierr);
 
                 if (Bmark->fpointer == shared) {

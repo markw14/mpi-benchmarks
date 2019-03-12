@@ -122,14 +122,14 @@ Output variables:
 */
     int    i;
     Type_Size s_size;
-    int s_num;
+    int s_num = 0;
     double t1, t2;
 
 #ifdef CHECK
     defect = 0.;
 #endif
 
-    ierr = 0;
+    int ierr = 0;
 
     /*  GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->red_data_type, &s_size);
@@ -194,7 +194,7 @@ void IMB_ireduce(struct comm_info* c_info,
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /* GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->red_data_type, &s_size);
@@ -264,7 +264,7 @@ void IMB_ireduce_pure(struct comm_info* c_info,
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /* GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->red_data_type, &s_size);

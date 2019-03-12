@@ -120,7 +120,7 @@ Output variables:
 */
     int i;
     Type_Size s_size, r_size;
-    int s_num, r_num;
+    int s_num = 0, r_num = 0;
     int s_tag, r_tag;
     int dest, source;
     MPI_Status stat;
@@ -129,7 +129,7 @@ Output variables:
 #ifdef CHECK
     defect = 0;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /*  GET SIZE OF DATA TYPE's in s_size and r_size */
     MPI_Type_size(c_info->s_data_type, &s_size);

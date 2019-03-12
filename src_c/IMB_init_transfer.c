@@ -201,9 +201,7 @@ In/out variables:
 #elif defined  EXT
     MPI_Aint sz;
     int s_size, r_size;
-    int ierr;
-
-    ierr = 0;
+    int ierr = 0;
 
     if (Bmark->reduction) {
         MPI_Type_size(c_info->red_data_type, &s_size);

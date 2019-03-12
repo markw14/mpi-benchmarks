@@ -68,7 +68,7 @@ For more documentation than found here, see
 #ifdef CHECK
 #define MPI_ERRHAND(ierr) IMB_err_hand(1,ierr)
 #else
-#define MPI_ERRHAND(ierr)
+#define MPI_ERRHAND(ierr) (void)ierr; 
 #endif
 
 #endif

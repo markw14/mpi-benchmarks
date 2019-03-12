@@ -117,13 +117,13 @@ Output variables:
 */
     int    i;
     Type_Size s_size, r_size;
-    int s_num, r_num;
+    int s_num = 0, r_num = 0;
     double t1, t2;
 
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /*  GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->s_data_type, &s_size);
@@ -224,7 +224,7 @@ Output variables:
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /* GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->s_data_type, &s_size);
@@ -325,7 +325,7 @@ Output variables:
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /* GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->s_data_type, &s_size);
@@ -347,7 +347,7 @@ Output variables:
 
         for (i = 0; i < ITERATIONS->n_sample; i++) {
             t_pure -= MPI_Wtime();
-            ierr = MPI_Iscatterv((char*)c_info->s_buffer + i % ITERATIONS->s_cache_iter * ITERATIONS->s_offs,
+            int ierr = MPI_Iscatterv((char*)c_info->s_buffer + i % ITERATIONS->s_cache_iter * ITERATIONS->s_offs,
                                  c_info->sndcnt,
                                  c_info->sdispl,
                                  c_info->s_data_type,

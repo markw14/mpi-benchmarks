@@ -393,7 +393,7 @@ struct Bmark_descr {
     {
 
     /* IMB 3.1 << */
-        size_t s_len, r_len, s_alloc, r_alloc;
+        size_t s_len = 0, r_len = 0, s_alloc, r_alloc;
         int init_size, irep, i_s, i_r, x_sample;
 
 
@@ -413,7 +413,7 @@ struct Bmark_descr {
 #endif
         Bmark->sample_failure = 0;
 
-        init_size = std::max(size, asize);
+        init_size = std::max(size, (int) sizeof(assign_type));
 
         if (c_info->rank < 0) {
             return;
@@ -588,7 +588,7 @@ struct Bmark_descr {
             int acc_rep_test, t_sample;
             int selected_n_sample = ITERATIONS->n_sample;
 
-            memset(time, 0, MAX_TIME_ID);
+            memset(time, 0, MAX_TIME_ID * sizeof(double));
             if (iter == 0 || BMODE->type == Sync) {
                 ITERATIONS->n_sample_prev = ITERATIONS->msgspersample;
                 if (c_info->n_lens > 0) {
@@ -607,7 +607,7 @@ struct Bmark_descr {
 
 #ifdef MPIIO
             if( Bmark->access != no) {
-                ierr = MPI_File_seek(c_info->fh, 0 ,MPI_SEEK_SET);
+                int ierr = MPI_File_seek(c_info->fh, 0 ,MPI_SEEK_SET);
                 MPI_ERRHAND(ierr);
 
                 if( Bmark->fpointer == shared) {
@@ -640,7 +640,7 @@ struct Bmark_descr {
                 time[1] = time[0];
 #ifdef MPIIO
                 if( Bmark->access != no) {
-                    ierr = MPI_File_seek(c_info->fh, 0 ,MPI_SEEK_SET);
+                    int ierr = MPI_File_seek(c_info->fh, 0 ,MPI_SEEK_SET);
                     MPI_ERRHAND(ierr);
 
                     if ( Bmark->fpointer == shared) {

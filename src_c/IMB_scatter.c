@@ -117,13 +117,13 @@ Output variables:
 */
     int    i;
     Type_Size s_size, r_size;
-    int s_num, r_num;
+    int s_num = 0, r_num = 0;
     double t1, t2;
 
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /*  GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->s_data_type, &s_size);
@@ -215,7 +215,7 @@ Output variables:
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /* GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->s_data_type, &s_size);
@@ -307,7 +307,7 @@ Output variables:
     Type_Size   s_size,
                 r_size;
     int         s_num = 0,
-                r_num;
+                r_num = 0;
     MPI_Request request;
     MPI_Status  status;
     double      t_pure = 0.;
@@ -315,7 +315,7 @@ Output variables:
 #ifdef CHECK
     defect = 0.;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     /* GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->s_data_type, &s_size);
@@ -355,6 +355,7 @@ Output variables:
         t_pure /= ITERATIONS->n_sample;
     }
     time[0] = t_pure;
+    (void)ierr;
 }
 
 #endif // NBC // MPI1

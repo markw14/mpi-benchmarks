@@ -88,7 +88,7 @@ void IMB_rma_single_get(struct comm_info* c_info, int size,
 #ifdef CHECK 
     defect = 0;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     if (c_info->rank == c_info->pair0) {
         target = c_info->pair1;
@@ -176,7 +176,7 @@ void IMB_rma_get_all(struct comm_info* c_info, int size,
     int r_num;
     int i;
     char *recv = (char *)c_info->r_buffer;
-    ierr = 0;
+    int ierr = 0;
 
     if (c_info->rank < 0) {
         *time = res_time;
@@ -236,7 +236,7 @@ void IMB_rma_get_local(struct comm_info* c_info, int size,
     int r_num;
     int i;
     char *recv = (char *)c_info->r_buffer;
-    ierr = 0;
+    int ierr = 0;
 
     if (c_info->rank < 0) {
         *time = res_time;
@@ -309,7 +309,7 @@ void IMB_rma_get_all_local(struct comm_info* c_info, int size,
     int  r_num;
     int i;
     char *recv = (char *)c_info->r_buffer;
-    ierr = 0;
+    int ierr = 0;
 
     if (c_info->rank < 0) {
         *time = res_time;
@@ -369,7 +369,7 @@ void IMB_rma_exchange_get(struct comm_info* c_info, int size,
 #ifdef CHECK 
     defect = 0;
 #endif
-    ierr = 0;
+    int ierr = 0;
 
     if (c_info->rank < 0) {
         *time = res_time;
