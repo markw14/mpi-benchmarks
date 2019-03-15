@@ -52,7 +52,11 @@ goods and services.
 
 #include <algorithm>
 
+
+#ifndef EXT
 static int do_nonblocking_;
+#endif
+
 typedef void (*original_benchmark_func_t)(struct comm_info* c_info, int size,
                 struct iter_schedule* ITERATIONS, MODES RUN_MODE, double* time);
 

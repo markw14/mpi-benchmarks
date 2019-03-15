@@ -125,14 +125,10 @@ Output variables:
                           Timing result per sample
 
 */
-    double t1, t2;
-
     Type_Size s_size, r_size;
     int s_num = 0, r_num = 0;
-    int dest, source, sender;
-    MPI_Status stat;
+    int dest, sender;
 
-    int ierr = 0;
     /*  GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->s_data_type, &s_size);
     MPI_Type_size(c_info->r_data_type, &r_size);
@@ -199,13 +195,9 @@ Output variables:
                           Timing result per sample
 
 */
-    double t1, t2;
-
     Type_Size s_size, r_size;
     int s_num = 0, r_num = 0;
-    int dest, source, sender;
-    int ierr;
-    MPI_Status stat;
+    int dest, sender;
 
     /*  GET SIZE OF DATA TYPE */
     MPI_Type_size(c_info->s_data_type, &s_size);
@@ -459,15 +451,14 @@ Output variables:
 
 */
     int i, ierr, r_size;
-    char* recv;
 
 #ifdef CHECK 
     defect = 0;
+    char *recv = (char*)c_info->r_buffer;
 #endif
 
     MPI_Type_size(c_info->r_data_type, &r_size);
 
-    recv = (char*)c_info->r_buffer;
 
     if (c_info->rank < 0)
         *time = 0.;
@@ -549,10 +540,11 @@ Output variables:
                           Timing result per sample
 
 */
+    char* send;
     int i, ierr;
-    char* send, *recv;
 
 #ifdef CHECK 
+    char *recv;
     defect = 0;
 #endif
 
@@ -560,7 +552,9 @@ Output variables:
         *time = 0.;
     else {
         send = (char*)c_info->s_buffer;
+#ifdef CHECK
         recv = (char*)c_info->r_buffer;
+#endif        
 
         ierr = MPI_Win_fence(0, c_info->WIN);
         MPI_ERRHAND(ierr);

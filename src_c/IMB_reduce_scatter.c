@@ -122,8 +122,7 @@ Output variables:
 
 */
     double t1, t2;
-    int    i, s_buff_size = 0;
-    size_t pos1, pos2;
+    int    i;
 #ifdef CHECK
     size_t pos;
     int    Locsize;
@@ -187,7 +186,6 @@ void IMB_ireduce_scatter(struct comm_info* c_info,
     double      t_pure = 0.,
                 t_comp = 0.,
                 t_ovrlp = 0.;
-    size_t pos1, pos2;
 
 #ifdef CHECK
     size_t      pos = 0;
@@ -271,8 +269,6 @@ void IMB_ireduce_scatter_pure(struct comm_info* c_info,
                               double* time) {
     int         i = 0;
     Type_Size   s_size;
-    size_t      pos1 = 0,
-                pos2 = 0;
     MPI_Request request;
     MPI_Status  status;
     double      t_pure = 0.;

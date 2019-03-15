@@ -113,9 +113,6 @@ IMB 3.1 <<
                       for iter==0, the WamrUp is carried out
 
 */
-    struct cmode MD;
-
-    MD.AGGREGATE = 1;
 
     if (c_info->rank >= 0) {
 #ifndef MPIIO
@@ -133,6 +130,8 @@ IMB 3.1 <<
             Bmark->Benchmark(c_info, size, ITERATIONS, Bmark->RUN_MODES, t);
 
 #else    
+            struct cmode MD; 
+            MD.AGGREGATE = 1;
             /* It is erroneous to pass unitialized MD to the bench. it may
              * depend on the particular mode values! Keep it for existing benchmarks
              * to save their bahvior */

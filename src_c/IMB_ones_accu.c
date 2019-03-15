@@ -122,17 +122,16 @@ Output variables:
                       Timing result per sample
 
 */
-    double t1, t2;
+//    double t1, t2;
 
     Type_Size s_size, r_size;
     int s_num = 0, r_num = 0;
     /* IMB 3.1 << */
     int r_off;
     /* >> IMB 3.1  */
-    int s_tag, r_tag;
-    int dest, source, root;
+//    int s_tag, r_tag;
+//    int dest, source;
     int i;
-    MPI_Status stat;
 
 
 #ifdef CHECK 
@@ -149,8 +148,7 @@ Output variables:
     r_num = s_num;
     r_off = ITERATIONS->r_offs / r_size;
     /* >> IMB 3.1  */
-
-    root = (c_info->rank == 0);
+    
 
     if (c_info->rank < 0)
         *time = 0.;
@@ -170,6 +168,7 @@ Output variables:
                 ierr = MPI_Win_fence(0, c_info->WIN);
                 MPI_ERRHAND(ierr);
 #ifdef CHECK
+                int root = (c_info->rank == 0);
                 if (root) {
                     CHK_DIFF("Accumulate", c_info, (char*)c_info->r_buffer + i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
                              0, size, size, asize,

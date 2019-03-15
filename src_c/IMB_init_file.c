@@ -331,14 +331,14 @@ In/out variables:
         if (c_info->filename != (char*)NULL) {
             if (c_info->File_rank == 0) {
                 // touch file
-                int ierr = MPI_File_open(MPI_COMM_SELF, c_info->filename,
+                MPI_File_open(MPI_COMM_SELF, c_info->filename,
                                      c_info->amode, MPI_INFO_NULL, &c_info->fh);
 
                 if (c_info->fh != MPI_FILE_NULL)
                     MPI_File_close(&c_info->fh);
 
                 /* IMB_3.0: simplify file deletion */
-                ierr = MPI_File_delete(c_info->filename, MPI_INFO_NULL);
+                MPI_File_delete(c_info->filename, MPI_INFO_NULL);
             }
         }
         MPI_Barrier(c_info->File_comm);

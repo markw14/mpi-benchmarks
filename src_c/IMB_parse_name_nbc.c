@@ -68,7 +68,7 @@ For more documentation than found here, see
 
 
 
-
+#include <ctype.h>
 #include "IMB_declare.h"
 #include "IMB_benchmark.h"
 

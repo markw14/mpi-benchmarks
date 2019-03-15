@@ -390,6 +390,7 @@ void contig_sum(void* in_buf, void* in_out_buf, int* len, MPI_Datatype* datatype
 }
 
 MPI_Op get_op(MPI_Datatype type, MPI_Datatype base_type) {
+    (void)type;
     MPI_Op op = MPI_SUM;
     if (base_type == MPI_CHAR) {
         MPI_Op_create(&(contig_sum<char>), 1, &op);

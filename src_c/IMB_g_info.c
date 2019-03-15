@@ -136,6 +136,7 @@ void IMB_make_sys_info() {
 
 */
     int dont_care, mpi_subversion, mpi_version;
+    (void)dont_care;
     /* IMB 3.1 << */
 #ifndef WIN_IMB
     struct utsname info;

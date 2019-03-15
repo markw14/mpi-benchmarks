@@ -159,7 +159,6 @@ Input variables:
     double scaled_time[MAX_TIME_ID];
 
     int i, i_gr;
-    int li_len;
     int out_format;
 
     const int DO_OUT = (c_info->w_rank == 0) ? 1 : 0;
@@ -275,14 +274,12 @@ Input variables:
                       Code for table formatting details
 
 */
-    int i, offset = 0, peers;
+    int offset = 0;
     static double MEGA = 1.0 / 1e6;
 
     double throughput = 0.;
-    double overlap = 0.;
     double t_pure = 0.;
     double t_ovrlp = 0.;
-    double t_comp = 0.;
     double msgrate = 0;
 
     Timing timing[MAX_TIME_ID]; // min, max and avg
@@ -303,6 +300,8 @@ Input variables:
 #endif
 
 #ifdef NBC
+    double overlap = 0.;
+    double t_comp = 0.;
     if (!strstr(Bmark->name, "_pure")) {
         const size_t rank_index = timing[MAX].offset[OVRLP];
         t_pure = tlist[rank_index + PURE];
@@ -323,6 +322,8 @@ Input variables:
     }
 
 #else // NBC || RMA
+    double overlap = 0.;
+    double t_comp = 0.;
     if (Bmark->RUN_MODES[0].NONBLOCKING) {
         t_pure = timing[MAX].times[PURE];
         t_ovrlp = timing[MAX].times[OVRLP];
@@ -336,7 +337,7 @@ Input variables:
             throughput = (Bmark->scale_bw * SCALE * MEGA) * size / timing[MAX].times[PURE];
 #ifndef MPIIO
         else {
-            peers = c_info->num_procs / 2;
+            int peers = c_info->num_procs / 2;
             msgrate = (Bmark->scale_bw * SCALE * MAX_WIN_SIZE * peers) / timing[MAX].times[PURE];
             throughput = MEGA * msgrate * size;
         }
@@ -629,7 +630,7 @@ void IMB_show_procids(struct comm_info* c_info) {
 
 
        */
-    int ip, py, i, k, idle;
+    int ip, py, i, idle;
 
     if (c_info->w_rank == 0) {
         if (c_info->n_groups == 1) {
@@ -703,7 +704,7 @@ Input variables:
 
 */
 #define MAX_SHOW 1024
-    int i, j;
+    int i;
 
     char* outtxt;
     int do_out;
@@ -772,9 +773,8 @@ Input variables:
 
 */
 #define X_PER_ROW 16
-    int i, j, i0, irest;
+    int i, j, i0;
 
-    irest = M%X_PER_ROW;
     for (j = 0; j < (M + X_PER_ROW - 1) / X_PER_ROW; j++) {
         i0 = j*X_PER_ROW;
 
@@ -926,7 +926,7 @@ void IMB_print_header(int out_format, struct Bench* bmark,
     }
 
     help = aux_string;
-    while (token = strtok(help, "&")) {
+    while ((token = strtok(help, "&"))) {
         sprintf(format, "%%%ds", ow_format);
         fprintf(unit, format, token);
         help = NULL;

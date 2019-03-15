@@ -49,14 +49,6 @@
 
 all: announce
 
-WITH_YAML_CPP=1
-
-ifdef WITH_YAML_CPP
-all:
-else
-all:	
-endif
-
 ifndef TARGET
 TARGET=example
 ANNOUNCE=1
@@ -79,8 +71,13 @@ ifeq ($(origin CXX),default)
 CXX=mpiicpc
 endif
 override CPPFLAGS += -I.
+
 override CFLAGS += -O2 -Wall -Wno-long-long
 override CXXFLAGS += -O2 -Wall -Wextra -pedantic -Wno-long-long -std=c++11
+
+#override CFLAGS += -O0 -g -Wall -Wno-long-long
+#override CXXFLAGS += -O0 -g -Wall -Wextra -pedantic -Wno-long-long -std=c++11
+
 override LDFLAGS += -largsparser -lyaml-cpp 
 ifdef WITH_OPENMP
 override CFLAGS += -fopenmp
@@ -117,10 +114,6 @@ benchmark_suite.h \
 benchmark_suites_collection.h \
 utils.h \
 scope.h
-
-ifdef WITH_YAML_CPP
-override CPPFLAGS += -DWITH_YAML_CPP
-endif
 
 announce:
 	@if test "$(ANNOUNCE)" -eq "1"; then echo "NOTE: Building target: $(TARGET), binary name: $(BINARY)"; fi

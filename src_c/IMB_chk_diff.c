@@ -233,7 +233,7 @@ Input variables:
 
 #ifdef MPIIO
     {
-        MPI_Offset Offset;
+        MPI_Offset Offset = (MPI_Offset)0;
         switch (fpos) {
             case indv_block:
                 Offset = (MPI_Offset)(j_sample * totlen);
@@ -249,6 +249,10 @@ Input variables:
 
             case shared:
                 Offset = (MPI_Offset)(-1);
+                break;
+            case nothing: 
+                break;
+            case indv_cyclic:
                 break;
         }
 
