@@ -57,7 +57,7 @@ goods and services.
 #include <stdio.h>
 #include <fstream>
 #include "benchmark.h"
-#include "argsparser/argsparser.h"
+#include "argsparser.h"
 #include "utils.h"
 #include "benchmark_suites_collection.h"
 #include "benchmark_suite.h"
