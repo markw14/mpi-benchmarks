@@ -71,35 +71,63 @@ namespace async_suite {
                                                               std::ostream &output) const {
         UNUSED(output);
         parser.set_current_group(get_name());
-        parser.add_vector<int>("len", "1,2,4,8").
-                     set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING);
-        parser.add<std::string>("datatype", "int").set_caption("int|char");
+        parser.add_vector<int>("len", "4,128,2048,32768,524288").
+                     set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING).
+                     set_caption("INT,INT,...");
+        parser.add<std::string>("datatype", "double").set_caption("double|int|char");
         parser.add<int>("ncycles", 1000);
+        parser.add<int>("nwarmup", 3);
+        parser.add_vector<int>("calctime", "10,10,50,500,10000").
+                     set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING).
+                     set_caption("INT,INT,...");
+        parser.add<std::string>("workload", "none").set_caption("none|calc|calc_and_progress|calc_and_mpich_progress");
         parser.set_default_current_group();
         return true;
     }
 
     std::vector<int> len;
+    std::vector<int> calctime;
     MPI_Datatype datatype;
-    int ncycles;
+    int ncycles, nwarmup;
+    enum workload_t {
+        NONE, CALC, CALC_AND_PROGRESS, CALC_AND_MPICH_PROGRESS
+    } workload;
 
     template <> bool BenchmarkSuite<BS_GENERIC>::prepare(const args_parser &parser,
                                                          const std::vector<std::string> &,
                                                          const std::vector<std::string> &unknown_args,
                                                          std::ostream &output) {
         if (unknown_args.size() != 0) {
-            output << "Some unknown options or extra arguments." << std::endl;
+            output << "Some unknown options or extra arguments. Use -help for help." << std::endl;
             return false;
         }
         parser.get<int>("len", len);
+        parser.get<int>("calctime", calctime);
+        std::string str_workload = parser.get<std::string>("workload");
+        if (str_workload == "none") {
+            workload = workload_t::NONE; 
+        } else if (str_workload == "calc") {
+            workload = workload_t::CALC; 
+        } else if (str_workload == "calc_and_progress") {
+            workload = workload_t::CALC_AND_PROGRESS; 
+        } else if (str_workload == "calc_and_mpich_progress") {
+            workload = workload_t::CALC_AND_MPICH_PROGRESS;
+        } else {
+            output << get_name() << ": " << "Unknown workload kind in 'workload' option. Use -help for help." << std::endl;
+            return false;
+        }
+
+
         std::string dt = parser.get<std::string>("datatype");
         if (dt == "int") datatype = MPI_INT;
+        else if (dt == "double") datatype = MPI_DOUBLE;
         else if (dt == "char") datatype = MPI_CHAR;
         else {
-            output << get_name() << ": " << "Unknown data type in datatype option" << std::endl;
+            output << get_name() << ": " << "Unknown data type in 'datatype' option. Use -help for help." << std::endl;
             return false;
         }
         ncycles = parser.get<int>("ncycles");
+        nwarmup = parser.get<int>("nwarmup");
         return true;
     }
 
@@ -114,8 +142,11 @@ namespace async_suite {
     template <> any BenchmarkSuite<BS_GENERIC>::get_parameter(const std::string &key) {
         any result;
         HANDLE_PARAMETER(std::vector<int>, len);
+        HANDLE_PARAMETER(std::vector<int>, calctime);
         HANDLE_PARAMETER(MPI_Datatype, datatype);
         HANDLE_PARAMETER(int, ncycles);
+        HANDLE_PARAMETER(int, nwarmup);
+        HANDLE_PARAMETER(workload_t, workload);
         return result;
     }
 

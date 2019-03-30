@@ -50,20 +50,75 @@ goods and services.
 
 #include "async_suite.h"
 
-//using namespace std;
-
 namespace async_suite {
 
     class AsyncBenchmark : public Benchmark {
-        std::map<int, double> results;
+        public:
+        const size_t ASSUMED_CACHE_SIZE = 4 * 1024 * 1024;
+        struct result {
+            bool done;
+            double time;
+            double overhead;
+        };
+        std::map<int, result> results;
         char *sbuf, *rbuf;
         int np, rank;
+        size_t allocated_size;
+        int dtsize;
         public:
         virtual void init() override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover) = 0;
         virtual void run(const scope_item &item) override; 
         virtual void finalize() override;
+        AsyncBenchmark() : sbuf(nullptr), rbuf(nullptr), np(0), rank(0), allocated_size(0), dtsize(0) {}
         virtual ~AsyncBenchmark(); 
-        DEFINE_INHERITED(AsyncBenchmark, BenchmarkSuite<BS_GENERIC>);
+    };
+
+    class AsyncBenchmark_calc : public AsyncBenchmark {
+        public:
+        MPI_Request *reqs = nullptr;
+        int stat[10];
+        int total_tests = 0;
+        int successful_tests = 0;
+        int num_requests;
+        /*bool do_probe;*/
+        workload_t wld;
+        std::map<int, int> calctime_by_len;
+        static const int SIZE = 10;
+        int ncalcs;
+        float a[SIZE][SIZE], x[SIZE], y[SIZE];
+        public:
+        virtual void init() override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover) override;
+        DEFINE_INHERITED(AsyncBenchmark_calc, BenchmarkSuite<BS_GENERIC>);
+    };
+
+    class AsyncBenchmark_pt2pt : public AsyncBenchmark {
+        public:
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover) override;
+        DEFINE_INHERITED(AsyncBenchmark_pt2pt, BenchmarkSuite<BS_GENERIC>);
+    };
+
+    class AsyncBenchmark_ipt2pt : public AsyncBenchmark {
+        public:
+        AsyncBenchmark_calc calc;
+        virtual void init() override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover) override;
+        DEFINE_INHERITED(AsyncBenchmark_ipt2pt, BenchmarkSuite<BS_GENERIC>);
+    };
+
+    class AsyncBenchmark_allreduce : public AsyncBenchmark {
+        public:
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover) override;
+        DEFINE_INHERITED(AsyncBenchmark_allreduce, BenchmarkSuite<BS_GENERIC>);
+    };
+
+    class AsyncBenchmark_iallreduce : public AsyncBenchmark {
+        public:
+        AsyncBenchmark_calc calc;
+        virtual void init() override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover) override;
+        DEFINE_INHERITED(AsyncBenchmark_iallreduce, BenchmarkSuite<BS_GENERIC>);
     };
 
 }
