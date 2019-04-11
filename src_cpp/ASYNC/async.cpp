@@ -328,9 +328,9 @@ namespace async_suite {
             }
         }
         double timings[3];
-        int w = 2;
+        int warmup = 2;
         int Nrep = (50000000 / (2 * SIZE*SIZE)) + 1;
-        for (int k = 0; k < 3+w; k++) {
+        for (int k = 0; k < 3+warmup; k++) {
             double t1 = MPI_Wtime();
             for (int repeat = 0; repeat < Nrep; repeat++) {
                 for (int i=0; i<SIZE; i++) {
@@ -340,15 +340,20 @@ namespace async_suite {
                 }
             }
             double t2 = MPI_Wtime();
-            if (k >= w)
-                timings[k-w] = t2 - t1;
+            if (k >= warmup)
+                timings[k-warmup] = t2 - t1;
         }
         double tmedian = std::min(timings[0], timings[1]);
         if (tmedian < timings[2])
             tmedian = std::min(std::max(timings[0], timings[1]), timings[2]);
         Nrep = (int)((double)Nrep / (tmedian * 1.0e5) + 0.99);
+        int ncalcs_min = 0, ncalcs_max = 0;
         MPI_Allreduce(&Nrep, &ncalcs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&Nrep, &ncalcs_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+        MPI_Allreduce(&Nrep, &ncalcs_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
         ncalcs /= np;
+        if (rank == 0)
+            std::cout << ">> ncalcs=" << ncalcs << " min/max=" << ncalcs_min << "/" << ncalcs_max << std::endl;
     }
 
     bool AsyncBenchmark_calc::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover) {
