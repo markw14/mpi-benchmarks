@@ -74,13 +74,14 @@ namespace async_suite {
         parser.add_vector<int>("len", "4,128,2048,32768,524288").
                      set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING).
                      set_caption("INT,INT,...");
-        parser.add<std::string>("datatype", "double").set_caption("double|int|char");
+        parser.add<std::string>("datatype", "double").set_caption("double|float|int|char");
         parser.add<int>("ncycles", 1000);
-        parser.add<int>("nwarmup", 3);
+        parser.add<int>("nwarmup", 0); //3);
         parser.add_vector<int>("calctime", "10,10,50,500,10000").
                      set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING).
                      set_caption("INT,INT,...");
         parser.add<std::string>("workload", "none").set_caption("none|calc|calc_and_progress|calc_and_mpich_progress");
+        parser.add<int>("cper10usec", 0).set_caption("INT -- amount of calc cycles per 10 microseconds in normal mode");
         parser.set_default_current_group();
         return true;
     }
@@ -89,6 +90,7 @@ namespace async_suite {
     std::vector<int> calctime;
     MPI_Datatype datatype;
     int ncycles, nwarmup;
+    int cper10usec;
     enum workload_t {
         NONE, CALC, CALC_AND_PROGRESS, CALC_AND_MPICH_PROGRESS
     } workload;
@@ -103,6 +105,7 @@ namespace async_suite {
         }
         parser.get<int>("len", len);
         parser.get<int>("calctime", calctime);
+        cper10usec = parser.get<int>("cper10usec");
         std::string str_workload = parser.get<std::string>("workload");
         if (str_workload == "none") {
             workload = workload_t::NONE; 
@@ -121,6 +124,7 @@ namespace async_suite {
         std::string dt = parser.get<std::string>("datatype");
         if (dt == "int") datatype = MPI_INT;
         else if (dt == "double") datatype = MPI_DOUBLE;
+	else if (dt == "float") datatype = MPI_FLOAT;
         else if (dt == "char") datatype = MPI_CHAR;
         else {
             output << get_name() << ": " << "Unknown data type in 'datatype' option. Use -help for help." << std::endl;
@@ -146,6 +150,7 @@ namespace async_suite {
         HANDLE_PARAMETER(MPI_Datatype, datatype);
         HANDLE_PARAMETER(int, ncycles);
         HANDLE_PARAMETER(int, nwarmup);
+        HANDLE_PARAMETER(int, cper10usec);
         HANDLE_PARAMETER(workload_t, workload);
         return result;
     }

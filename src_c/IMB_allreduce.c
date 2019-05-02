@@ -277,6 +277,7 @@ void IMB_iallreduce_pure(struct comm_info* c_info,
                                   c_info->op_type,
                                   c_info->communicator,
                                   &request);
+//	    printf(">> s_num=%d\n");	
             MPI_ERRHAND(ierr);
             MPI_Wait(&request, &status);
             t_pure += MPI_Wtime();
