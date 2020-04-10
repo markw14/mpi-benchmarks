@@ -500,7 +500,7 @@ template <> bool BenchmarkSuite<BS_IO>::prepare(const args_parser &parser, const
 }
 
 template <> void BenchmarkSuite<BS_IO>::finalize(const vector<string> &benchs,
-                                                   std::ostream &output) {
+                                                 std::ostream &output) {
     UNUSED(output);
     using namespace NS_IO;
     if (!prepared)

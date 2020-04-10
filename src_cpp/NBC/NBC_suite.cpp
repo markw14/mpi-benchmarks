@@ -520,7 +520,7 @@ template <> bool BenchmarkSuite<BS_NBC>::prepare(const args_parser &parser, cons
 }
 
 template <> void BenchmarkSuite<BS_NBC>::finalize(const vector<string> &benchs,
-                                                   std::ostream &output) {
+                                                  std::ostream &output) {
     UNUSED(output);
     using namespace NS_NBC;
     if (!prepared)

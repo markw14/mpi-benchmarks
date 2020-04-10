@@ -95,9 +95,44 @@ namespace async_suite {
             results[item.len] = result { false, 0.0, 0.0, 0.0 };
         }
     }
-    
+
+    struct YamlOutputMaker {
+        const std::string &block;
+        YamlOutputMaker(const std::string &_block) : block(_block) {}
+        std::map<const std::string, double> kv;
+        void add(const std::string &key, double value) { kv[key] = value; }
+        void add(int key, double value) { add(std::to_string(key), value); }
+        void make_output(YAML::Emitter &yaml_out) const {
+            yaml_out << YAML::Key << block << YAML::Value;
+            yaml_out << YAML::Flow << YAML::BeginMap;
+            for (auto &item : kv) {
+                yaml_out << YAML::Key << YAML::Flow << item.first << YAML::Value << item.second;
+            }
+            yaml_out << YAML::Flow << YAML::EndMap;
+        } 
+    };
+
+    static void WriteOutYaml(YAML::Emitter &yaml_out, const std::string &bname, 
+                            const std::vector<YamlOutputMaker> &makers) {
+        yaml_out << YAML::Key << YAML::Flow << bname << YAML::Value;
+        yaml_out << YAML::Flow << YAML::BeginMap;
+        for (auto &m : makers) {
+            m.make_output(yaml_out);
+        }
+        yaml_out << YAML::Flow << YAML::EndMap;
+    }
+
     void AsyncBenchmark::finalize() { 
+        GET_PARAMETER(YAML::Emitter, yaml_out);
+        YamlOutputMaker yaml_tmin("tmin");
+        YamlOutputMaker yaml_tmax("tmax");
+        YamlOutputMaker yaml_tavg("tavg");
+        YamlOutputMaker yaml_over_comm("over_comm");
+        YamlOutputMaker yaml_over_calc("over_calc");
+        YamlOutputMaker yaml_over_full("over_full");
+        YamlOutputMaker yaml_topo("topo");
         for (auto it = results.begin(); it != results.end(); ++it) {
+            int len = it->first;
             double time = (it->second).time, tmin = 0, tmax = 0, tavg = 0;
             double tover_comm = 0, tover_calc = 0;
             int is_done = ((it->second).done ? 1 : 0), nexec = 0;
@@ -112,20 +147,28 @@ namespace async_suite {
             
             if (rank == 0) {
                 if (nexec == 0) {
-                    std::cout << get_name() << ": " << "{ " << "len: " << it->first << ", "
+                    std::cout << get_name() << ": " << "{ " << "len: " << len << ", "
                         << " error: \"no successful executions!\"" << " }" << std::endl;
                 } else {
                     tavg /= nexec;
                     tover_calc /= nexec;
-                    std::cout << get_name() << ": " << "{ " << "len: " << it->first << ", "
+                    std::cout << get_name() << ": " << "{ " << "len: " << len << ", "
                         << " time: [ " << tmin << ", " 
                                       << tavg << ", " 
                                       << tmax << " ]" 
                         << ", overhead: [ " << tover_comm << " , " << tover_calc 
                                       << " ] }" << std::endl;
+                    yaml_tmin.add(len, tmin);
+                    yaml_tmax.add(len, tmax);
+                    yaml_tavg.add(len, tavg);
+                    yaml_over_comm.add(len, tover_comm); 
+                    yaml_over_calc.add(len, tover_calc); 
+                    yaml_over_full.add(len, tover_calc + tover_comm);
                 }
             }
         }
+        yaml_topo.add("np", np);
+        WriteOutYaml(yaml_out, get_name(), {yaml_tavg, yaml_over_full, yaml_topo});
     }
     AsyncBenchmark::~AsyncBenchmark() {
         free(rbuf);

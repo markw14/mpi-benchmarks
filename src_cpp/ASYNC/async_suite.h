@@ -54,6 +54,7 @@ goods and services.
 #include <map>
 #include <set>
 #include <iostream>
+#include <fstream>
 
 #include "benchmark.h"
 #include "benchmark_suites_collection.h"
@@ -89,6 +90,8 @@ namespace async_suite {
     std::vector<int> len;
     std::vector<int> calctime;
     MPI_Datatype datatype;
+    YAML::Emitter yaml_out;
+    std::string yaml_outfile;
     int ncycles, nwarmup;
     int cper10usec;
     enum workload_t {
@@ -132,7 +135,20 @@ namespace async_suite {
         }
         ncycles = parser.get<int>("ncycles");
         nwarmup = parser.get<int>("nwarmup");
+        yaml_outfile = parser.get<std::string>("output");
+        yaml_out << YAML::BeginDoc;
+        yaml_out << YAML::BeginMap;
         return true;
+    }
+
+     template <> void BenchmarkSuite<BS_GENERIC>::finalize(const std::vector<std::string> &,
+                          std::ostream &) {
+        yaml_out << YAML::EndMap;
+        yaml_out << YAML::Newline;
+        if (!yaml_outfile.empty()) {
+            std::ofstream ofs(yaml_outfile, std::ios_base::out | std::ios_base::trunc);
+            ofs << yaml_out.c_str();
+        }
     }
 
 #define HANDLE_PARAMETER(TYPE, NAME) if (key == #NAME) { \
@@ -148,6 +164,7 @@ namespace async_suite {
         HANDLE_PARAMETER(std::vector<int>, len);
         HANDLE_PARAMETER(std::vector<int>, calctime);
         HANDLE_PARAMETER(MPI_Datatype, datatype);
+        HANDLE_PARAMETER(YAML::Emitter, yaml_out);
         HANDLE_PARAMETER(int, ncycles);
         HANDLE_PARAMETER(int, nwarmup);
         HANDLE_PARAMETER(int, cper10usec);

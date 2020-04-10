@@ -139,6 +139,9 @@ int main(int argc, char * *argv)
         parser.add<string>("load", "").set_caption("config.yaml").
                set_description(
                    "Load session options from YAML config file given as a parameter\n");
+        parser.add<string>("output", "").set_caption("output.yaml").
+               set_description(
+                   "File name to write YAML-formatted structured output\n");
 #endif        
         parser.add_flag("list").
                set_description(
@@ -150,7 +153,8 @@ int main(int argc, char * *argv)
         if (!parser.parse()) {
             throw 1;
         }
-        
+
+        std::string yaml_outfile;
 #ifdef WITH_YAML_CPP        
         string infile;  
         infile = parser.get<string>("load");
@@ -169,6 +173,7 @@ int main(int argc, char * *argv)
             ofstream of(outfile.c_str(), ios_base::out);
             of << out;
         }
+        yaml_outfile = parser.get<string>("output");
 #endif
         
         vector<string> requested_benchmarks, to_include, to_exclude;
