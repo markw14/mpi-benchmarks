@@ -50,7 +50,7 @@
 all: announce
 
 ifndef TARGET
-TARGET=example
+TARGET=GPU
 ANNOUNCE=1
 else
 ANNOUNCE=0
@@ -98,15 +98,16 @@ endif
 #override CXXFLAGS += -qopenmp
 #endif
 
-
+NVCC ?= nvcc
 
 all: $(BINARY)
 
 IMB_SRC = imb.cpp scope.cpp
 IMB_OBJ = $(IMB_SRC:.cpp=.o)
 
-BECHMARK_SUITE_SRC += benchmark_suites_collection.cpp
-BECHMARK_SUITE_OBJ = $(BECHMARK_SUITE_SRC:.cpp=.o)
+BENCHMARK_SUITE_SRC += benchmark_suites_collection.cpp
+BENCHMARK_SUITE_OBJ_1 = $(BENCHMARK_SUITE_SRC:.cpp=.o)
+BENCHMARK_SUITE_OBJ = $(BENCHMARK_SUITE_OBJ_1:.cu=.o)	
 
 HEADERS += benchmark.h \
 benchmark_suite_base.h \
@@ -119,20 +120,23 @@ announce:
 	@if test "$(ANNOUNCE)" -eq "1"; then echo "NOTE: Building target: $(TARGET), binary name: $(BINARY)"; fi
 	@if test "$(ANNOUNCE)" -eq "1"; then echo "NOTE: Use make TARGET=<DIR_NAME> to select a target suite"; fi
 
-$(BINARY): $(IMB_OBJ) $(BECHMARK_SUITE_OBJ) $(ADDITIONAL_OBJ) 
+$(BINARY): $(IMB_OBJ) $(BENCHMARK_SUITE_OBJ) $(ADDITIONAL_OBJ) 
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: %.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
+%.o: %.cu
+	$(NVCC) $(CPPFLAGS) -O0 -g -c -o $@ $<
+
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 clean: announce
-	rm -f $(IMB_OBJ) $(BECHMARK_SUITE_OBJ) $(ADDITIONAL_OBJ) $(BINARY) 
+	rm -f $(IMB_OBJ) $(BENCHMARK_SUITE_OBJ) $(ADDITIONAL_OBJ) $(BINARY) 
 
 
-$(BECHMARK_SUITE_OBJ): $(HEADERS) Makefile
+$(BENCHMARK_SUITE_OBJ): $(HEADERS) Makefile
 $(IMB_OBJ): $(HEADERS) Makefile
 
 .PHONY: announce clean all

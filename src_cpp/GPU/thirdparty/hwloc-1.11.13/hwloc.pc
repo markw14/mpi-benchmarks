@@ -1,0 +1,12 @@
+prefix=/s/ls4/users/a_medvedev/src/imb-gpu/src_cpp/GPU/thirdparty/hwloc-1.11.13/../hwloc
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: hwloc
+Description: Hardware locality detection and management library
+Version: 1.11.13
+Requires.private: libxml-2.0 
+Cflags: -I${includedir}
+Libs: -L${libdir} -lhwloc
+Libs.private: -lm   -lxml2    -lpthread

@@ -293,6 +293,16 @@ int main(int argc, char * *argv)
         } else {
             throw logic_error("wrong value of `thread_level' option");
         }
+
+
+        //---------------------------------------------------------------------
+        // ACTUAL BENCHMARKING
+        //
+        // 1. Preparation phase on suite level
+        if (!BenchmarkSuitesCollection::prepare(parser, benchmarks_to_run, missing, output)) {
+            throw logic_error("One or more benchmark suites failed at preparation stage");
+        }
+
         if (!no_mpi_init_flag) {
             MPI_Init_thread(&argc, (char ***)&argv, required_mode, &provided_mode);
             MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -302,13 +312,6 @@ int main(int argc, char * *argv)
             }
         }
  
-        //---------------------------------------------------------------------
-        // ACTUAL BENCHMARKING
-        //
-        // 1, Preparation phase on suite level
-        if (!BenchmarkSuitesCollection::prepare(parser, benchmarks_to_run, missing, output)) {
-            throw logic_error("One or more benchmark suites failed at preparation stage");
-        }
         {
             using namespace set_operations;
             vector<string> benchmarks_to_exclude = benchmarks_to_run;
