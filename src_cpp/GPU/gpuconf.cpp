@@ -11,7 +11,6 @@
 
 struct gpu_conf {
     int ncores = 0, ngpus = 0;
-    bool noautoconf = false;
     std::map<int, int> core_to_gpu;
     std::vector<int> cores;
     mutable int core = -1;
@@ -25,21 +24,24 @@ struct gpu_conf {
     }
 };
 
+size_t device_get_num_of_dev();
+void device_set_current(size_t n);
+
+// THIS block may have portability issues (POSIX or even Linux specifics)
+#if 1
+namespace sys {
+// NOTE: seems to be Linux-specific
 static inline size_t getnumcores() {
     return sysconf(_SC_NPROCESSORS_ONLN);
 }
 
-size_t device_get_num_of_dev();
-void device_set_current(size_t n);
-
-#if 1
 static inline bool threadaffinityisset(int &nthreads) {
     cpu_set_t mask;
     if (sched_getaffinity(0, sizeof(cpu_set_t), &mask) == -1) {
         perror("sched_getaffinity");
         assert(false && "sched_getaffinity failure");
     }
-    int NC = getnumcores();
+    int NC = sys::getnumcores();
     int nset = 0;
     for (int i = 0; i < NC; i++) {
         nset += (CPU_ISSET(i, &mask) ? 1 : 0);
@@ -63,8 +65,9 @@ static inline int getthreadaffinity() {
         }
     }
     assert (core != -1);
-    assert(core < (int)getnumcores());
+    assert(core < (int)sys::getnumcores());
     return core;
+}
 }
 #endif
 
@@ -89,7 +92,7 @@ static inline void vstr_to_vint(std::vector<std::string>& from, std::vector<int>
 
 void gpu_conf::init_generic() {
     core_to_gpu.clear();
-    size_t NC = getnumcores();
+    size_t NC = sys::getnumcores();
     size_t NG = device_get_num_of_dev();
     for (size_t i = 0; i < NC; i++) {
         int G = -1;
@@ -172,12 +175,11 @@ bool gpu_conf_init(const std::string &str)
         return false;
     }
     int nthreads = 0;
-    if (!threadaffinityisset(nthreads)) {
+    if (!sys::threadaffinityisset(nthreads)) {
         std::cout << "WARNING: thread affinity seems to be not set, can't choose relevant GPU device" << std::endl;
         return true;
     }
-    int gpu = conf.gpu_by_core(getthreadaffinity());
-    std::cout << ">> core=" << getthreadaffinity() << " " << "gpu=" << gpu << std::endl;
+    int gpu = conf.gpu_by_core(sys::getthreadaffinity());
     assert(gpu != -1);
     device_set_current(gpu);
     return true;

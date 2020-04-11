@@ -52,6 +52,7 @@ goods and services.
 #include <stdexcept>
 #include <fstream>
 #include <algorithm>
+#include <string.h>
 
 #include <memory>
 #include "argsparser.h"

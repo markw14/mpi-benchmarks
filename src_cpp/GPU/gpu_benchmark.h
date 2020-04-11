@@ -77,30 +77,24 @@ namespace gpu_suite {
         char *get_rbuf();
         void update_sbuf(char *, size_t off, size_t size);
         void update_rbuf(char *, size_t off, size_t size);
-        virtual ~GPUBenchmark(); 
+        virtual ~GPUBenchmark() {}
     };
 
     class GPUBenchmark_calc : public GPUBenchmark {
         public:
         char *host_transf_buf = nullptr, *device_transf_buf = nullptr;
-        MPI_Request *reqs = nullptr;
-        int stat[10];
-        int total_tests = 0;
-        int successful_tests = 0;
-        int num_requests;
-        std::map<int, int> calctime_by_len;
-        static const int SIZE = 7;
-        int ncalcs;
-        float a[SIZE][SIZE], b[SIZE][SIZE], c[SIZE][SIZE], x[SIZE], y[SIZE];
+        int workload_calibration = 0;
         public:
         virtual void init() override;
         virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) override;
+        virtual void finalize() override;
         DEFINE_INHERITED(GPUBenchmark_calc, BenchmarkSuite<BS_GENERIC>);
     };
 
     class GPUBenchmark_pt2pt : public GPUBenchmark {
         public:
         virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) override;
+        virtual void finalize() override { GPUBenchmark::finalize(); };
         DEFINE_INHERITED(GPUBenchmark_pt2pt, BenchmarkSuite<BS_GENERIC>);
     };
 
@@ -109,13 +103,58 @@ namespace gpu_suite {
         GPUBenchmark_calc calc;
         virtual void init() override;
         virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) override;
+        virtual void finalize() override { GPUBenchmark::finalize(); };
         DEFINE_INHERITED(GPUBenchmark_ipt2pt, BenchmarkSuite<BS_GENERIC>);
     };
 
     class GPUBenchmark_allreduce : public GPUBenchmark {
         public:
         virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) override;
+        virtual void finalize() override { GPUBenchmark::finalize(); };
         DEFINE_INHERITED(GPUBenchmark_allreduce, BenchmarkSuite<BS_GENERIC>);
     };
 
 }
+
+#include <sys/time.h>
+
+struct timer {
+  std::string name;
+  bool do_out = false;
+  bool stopped = false;
+  std::stringstream comment;
+  timeval tv[2];
+  long *presult = nullptr;
+  timer(const std::string& _name = "", bool _do_out = false) :
+    name(_name), do_out(_do_out) {
+      gettimeofday(&tv[0], NULL);
+  }
+  long time_diff() {
+    return ((long)tv[1].tv_sec - (long)tv[0].tv_sec) * 1000000L + (long)tv[1].tv_usec - (long)tv[0].tv_usec;
+  }
+  timer(long *_presult) : presult(_presult) {
+    gettimeofday(&tv[0], NULL);
+  }
+  long stop() {
+    gettimeofday(&tv[1], NULL);
+    long diff = time_diff();
+    if (presult) {
+      *presult = diff;
+      return diff;
+    }
+    if (do_out) {
+      std::cout << name << ": " << "[ "
+                << "time (usec): " << diff;
+      if (comment.str().size()) {
+        std::cout << ", " << "comment: \"" << comment.str() << "\"";
+      }
+      std::cout << " " << "]" << std::endl;
+    }
+    stopped = true;
+    return diff;
+  }
+  ~timer() throw() {
+      if (!stopped)
+          stop();
+  }
+};

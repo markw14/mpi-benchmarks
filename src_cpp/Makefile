@@ -99,6 +99,8 @@ endif
 #endif
 
 NVCC ?= nvcc
+CUDA_GENCODE ?= arch=compute_30,code=sm_30
+CUDA_HOME ?= $(shell echo $$(dirname $$(which $(NVCC)))/..)
 
 all: $(BINARY)
 
@@ -118,7 +120,7 @@ scope.h
 
 announce:
 	@if test "$(ANNOUNCE)" -eq "1"; then echo "NOTE: Building target: $(TARGET), binary name: $(BINARY)"; fi
-	@if test "$(ANNOUNCE)" -eq "1"; then echo "NOTE: Use make TARGET=<DIR_NAME> to select a target suite"; fi
+	@if test "$(ANNOUNCE)" -eq "1"; then echo "NOTE: Use make TARGET=<DIR_NAME> to select a specific target suite"; fi
 
 $(BINARY): $(IMB_OBJ) $(BENCHMARK_SUITE_OBJ) $(ADDITIONAL_OBJ) 
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
@@ -127,7 +129,7 @@ $(BINARY): $(IMB_OBJ) $(BENCHMARK_SUITE_OBJ) $(ADDITIONAL_OBJ)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o: %.cu
-	$(NVCC) $(CPPFLAGS) -O0 -g -c -o $@ $<
+	$(NVCC) $(CPPFLAGS) -std=c++11 -gencode $(CUDA_GENCODE) -O0 -g -c -o $@ $<
 
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<

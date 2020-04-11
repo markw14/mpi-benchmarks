@@ -52,10 +52,6 @@ goods and services.
 #include "yaml_io.h"
 #include "alloc.h"
 #include "device_routines.h"
-
-#include "mpi-ext.h" /* Needed for CUDA-aware check */
-
-//!!!
 #include <unistd.h>
 
 namespace gpu_suite {
@@ -150,7 +146,12 @@ namespace gpu_suite {
 #ifdef WITH_YAML_CPP        
         yaml_topo.add("np", np);
         WriteOutYaml(yaml_out, get_name(), {yaml_tavg, yaml_topo});
-#endif        
+#endif
+        // NOTE: can't free pinned memory in destructor, CUDA runtime comp;ains it's too late
+        host_mem_free(host_sbuf);
+        host_mem_free(host_rbuf);
+        device_mem_free(device_sbuf);
+        device_mem_free(device_rbuf);
     }
 
     char *GPUBenchmark::get_sbuf() {
@@ -179,13 +180,6 @@ namespace gpu_suite {
         if (b == host_rbuf) {
             h2d_transfer(device_rbuf, b + off, size);
         }        
-    }
-
-    GPUBenchmark::~GPUBenchmark() {
-        host_mem_free(host_sbuf);
-        host_mem_free(host_rbuf);
-        device_mem_free(device_sbuf);
-        device_mem_free(device_rbuf);
     }
 
     bool GPUBenchmark_pt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) {
@@ -244,8 +238,6 @@ namespace gpu_suite {
         const int tag = 1;
         int pair = -1;
         MPI_Request request[2];
-        calc.reqs = request;
-        calc.num_requests = 2;
         if (group % 2 == 0) {
             pair = rank + stride;
             for (int i = 0; i < ncycles + nwarmup; i++) {
@@ -283,6 +275,7 @@ namespace gpu_suite {
         } 
         MPI_Barrier(MPI_COMM_WORLD);
         results[count] = result { true, time };
+        device_sync_context();
         return true;
     }
 
@@ -339,15 +332,52 @@ namespace gpu_suite {
             device_mem_alloc(device_transf_buf, workload_transfer_size);
             host_mem_alloc(host_transf_buf, workload_transfer_size);
         }
+
+        // Workload execution time calibration procedure. Trying to tune number of cycles so that
+        // workload execution+sync time is about 1000 usec
+        workload_calibration = 1;
+        for (int i = 0; i < 10; i++) {             
+            timer t;
+            device_submit_workload(1, workload_calibration);
+            device_sync_context();
+            int usec = t.stop();
+            if (i < 3)
+                continue;
+            if (usec == 0)
+                break;
+            if (usec < 900L) {
+                workload_calibration += (1 + int(1000L/usec));
+            }
+        }
     }
 
     bool GPUBenchmark_calc::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) {
+        (void)count;
+        (void)datatype;
+        (void)nwarmup;
+        (void)ncycles;
+        (void)time;
         GET_PARAMETER(int, workload_cycles);
         GET_PARAMETER(int, workload_transfer_size);
-        // TODO is idle?
-        // TODO async kernel launch (workload_cycles)
-        // TODO async transfer (workload_transfer_size)
+        if (!workload_cycles)
+            return true;
+        if (device_is_idle()) {
+            device_submit_workload(workload_cycles, workload_calibration);
+            if (workload_transfer_size) {
+                d2h_transfer(host_transf_buf, device_transf_buf, workload_transfer_size, transfer_t::WORKLOAD);
+            }
+        }
         return true;
+    }
+    
+    void GPUBenchmark_calc::finalize() {
+        GPUBenchmark::finalize();
+        GET_PARAMETER(int, workload_cycles);
+        GET_PARAMETER(int, workload_transfer_size);
+        if (workload_cycles && workload_transfer_size) {
+            device_mem_free(device_transf_buf);
+            host_mem_free(host_transf_buf);
+        }
     }
 
     DECLARE_INHERITED(GPUBenchmark_pt2pt, gpu_pt2pt)

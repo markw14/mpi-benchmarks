@@ -60,8 +60,7 @@ BENCHMARK_SUITE_SRC += GPU/device_routines.cu
 BENCHMARK_SUITE_SRC += GPU/hwloc_iface.cpp
 
 GPU/gpu.o: GPU/alloc.h GPU/cuda_helpers.h GPU/gpu_benchmark.h GPU/gpu_suite.h GPU/device_routines.h GPU/yaml_io.h
-
-CUDA_HOME = $(shell echo $$(dirname $$(which nvcc))/..)
+GPU/gpu.o: GPU/thirdparty/include/argsparser.h GPU/thirdparty/include/hwloc.h GPU/thirdparty/include/yaml-cpp/yaml.h 
 
 override CXXFLAGS += -DWITH_HWLOC -IGPU/thirdparty/include -I$(CUDA_HOME)/include 
 override LDFLAGS += -LGPU/thirdparty/lib -Wl,-rpath=GPU/thirdparty/lib -L$(CUDA_HOME)/lib64 -lhwloc -lcudart -lcuda

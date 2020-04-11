@@ -52,7 +52,8 @@ goods and services.
 
 #include <iterator>
 #include <algorithm>
-#include <string.h>
+#include <string>
+#include <strings.h>
 
 namespace set_operations {
     // to = to \/ from      (in place set union)
@@ -95,7 +96,7 @@ namespace set_operations {
 #ifdef WIN_IMB
             return stricmp(lhs.c_str(), rhs.c_str()) < 0;
 #else
-            return ::strcasecmp(lhs.c_str(), rhs.c_str()) < 0 ;
+            return strcasecmp(lhs.c_str(), rhs.c_str()) < 0 ;
 #endif
         }
     };
