@@ -126,8 +126,10 @@ namespace gpu_suite {
             
             if (rank == 0) {
                 if (nexec == 0) {
-                    std::cout << get_name() << ": " << "{ " << "len: " << len << ", "
-                        << " error: \"no successful executions!\"" << " }" << std::endl;
+                    std::cout << get_name() << ": " << "{ " 
+                              << "len: " << len << ", "
+                              << " error: \"no successful executions, check params!\"" 
+                              << " }" << std::endl;
                 } else {
                     tavg /= nexec;
                     std::cout << get_name() << ": " << "{ " << "len: " << len << ", "
@@ -147,7 +149,8 @@ namespace gpu_suite {
         yaml_topo.add("np", np);
         WriteOutYaml(yaml_out, get_name(), {yaml_tavg, yaml_topo});
 #endif
-        // NOTE: can't free pinned memory in destructor, CUDA runtime comp;ains it's too late
+        // NOTE: can't free pinned memory in destructor, CUDA runtime complains 
+        // it's too late
         host_mem_free(host_sbuf);
         host_mem_free(host_rbuf);
         device_mem_free(device_sbuf);
@@ -182,7 +185,8 @@ namespace gpu_suite {
         }        
     }
 
-    bool GPUBenchmark_pt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) {
+    bool GPUBenchmark_pt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, 
+                                       int ncycles, double &time) {
         int stride = 0, group;
         if (!set_stride(rank, np, stride, group)) {
             MPI_Barrier(MPI_COMM_WORLD);
@@ -198,8 +202,10 @@ namespace gpu_suite {
             for (int i = 0; i < ncycles + nwarmup; i++) {
                 if (i == nwarmup) t1 = MPI_Wtime();
                 update_sbuf(get_sbuf(), (i%n)*b, b);
-                MPI_Send((char*)get_sbuf() + (i%n)*b, count, datatype, pair, tag, MPI_COMM_WORLD);
-                MPI_Recv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Send((char*)get_sbuf() + (i%n)*b, count, datatype, pair, 
+                          tag, MPI_COMM_WORLD);
+                MPI_Recv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, 
+                          MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 update_rbuf(get_rbuf(), (i%n)*b, b);
             }
             t2 = MPI_Wtime();
@@ -208,10 +214,12 @@ namespace gpu_suite {
             pair = rank - stride;
             for (int i = 0; i < ncycles + nwarmup; i++) {
                 if (i == nwarmup) t1 = MPI_Wtime();
-                MPI_Recv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, 
+                         MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 update_rbuf(get_rbuf(), (i%n)*b, b);
                 update_sbuf(get_sbuf(), (i%n)*b, b);
-                MPI_Send((char*)get_sbuf() + (i%n)*b, count, datatype, pair, tag, MPI_COMM_WORLD);
+                MPI_Send((char*)get_sbuf() + (i%n)*b, count, datatype, pair, 
+                         tag, MPI_COMM_WORLD);
             }
             t2 = MPI_Wtime();
             time = (t2 - t1) / ncycles;
@@ -226,7 +234,8 @@ namespace gpu_suite {
         calc.init();
     }
 
-    bool GPUBenchmark_ipt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) {
+    bool GPUBenchmark_ipt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, 
+                                        int ncycles, double &time) {
         int stride = 0, group;
         if (!set_stride(rank, np, stride, group)) {
             MPI_Barrier(MPI_COMM_WORLD);
@@ -243,9 +252,10 @@ namespace gpu_suite {
             for (int i = 0; i < ncycles + nwarmup; i++) {
                 if (i == nwarmup) t1 = MPI_Wtime();
                 update_sbuf(get_sbuf(), (i%n)*b, b);
-                MPI_Isend((char*)get_sbuf()  + (i%n)*b, count, datatype, pair, tag, MPI_COMM_WORLD, &request[0]);
-                MPI_Irecv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, MPI_ANY_TAG, MPI_COMM_WORLD, 
-                          &request[1]);
+                MPI_Isend((char*)get_sbuf()  + (i%n)*b, count, datatype, pair, 
+                          tag, MPI_COMM_WORLD, &request[0]);
+                MPI_Irecv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, 
+                          MPI_ANY_TAG, MPI_COMM_WORLD, &request[1]);
                 calc.benchmark(count, datatype, 0, 1, local_ctime);
                 if (i >= nwarmup) {
                     total_ctime += local_ctime;
@@ -260,9 +270,10 @@ namespace gpu_suite {
             for (int i = 0; i < ncycles + nwarmup; i++) {
                 if (i == nwarmup) t1 = MPI_Wtime();
                 update_sbuf(get_sbuf(), (i%n)*b, b);
-                MPI_Isend((char*)get_sbuf() + (i%n)*b, count, datatype, pair, tag, MPI_COMM_WORLD, &request[0]);
-                MPI_Irecv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, MPI_ANY_TAG, MPI_COMM_WORLD, 
-                          &request[1]);
+                MPI_Isend((char*)get_sbuf() + (i%n)*b, count, datatype, pair, 
+                          tag, MPI_COMM_WORLD, &request[0]);
+                MPI_Irecv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, 
+                          MPI_ANY_TAG, MPI_COMM_WORLD, &request[1]);
                 calc.benchmark(count, datatype, 0, 1, local_ctime);
                 if (i >= nwarmup) {
                     total_ctime += local_ctime;
@@ -299,14 +310,16 @@ namespace gpu_suite {
 #endif
     }
 
-    bool GPUBenchmark_allreduce::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) {
+    bool GPUBenchmark_allreduce::benchmark(int count, MPI_Datatype datatype, int nwarmup, 
+                                           int ncycles, double &time) {
         size_t b = (size_t)count * (size_t)dtsize;
         size_t n = allocated_size / b;
         double t1 = 0, t2 = 0;
         for(int i = 0; i < ncycles + nwarmup; i++) {
             if (i >= nwarmup) t1 = MPI_Wtime();
             update_sbuf(get_sbuf(), (i%n)*b, b);
-            MPI_Allreduce((char *)get_sbuf() + (i%n)*b, (char *)get_rbuf() + (i%n)*b, count, datatype, MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce((char *)get_sbuf() + (i%n)*b, (char *)get_rbuf() + (i%n)*b, count, 
+                          datatype, MPI_SUM, MPI_COMM_WORLD);
             update_rbuf(get_rbuf(), (i%n)*b, b);
             if (i >= nwarmup) {
                 t2 = MPI_Wtime();
@@ -333,8 +346,8 @@ namespace gpu_suite {
             host_mem_alloc(host_transf_buf, workload_transfer_size);
         }
 
-        // Workload execution time calibration procedure. Trying to tune number of cycles so that
-        // workload execution+sync time is about 1000 usec
+        // Workload execution time calibration procedure. Trying to tune number of cycles 
+        // so that workload execution+sync time is about 1000 usec
         workload_calibration = 1;
         for (int i = 0; i < 10; i++) {             
             timer t;
@@ -351,7 +364,8 @@ namespace gpu_suite {
         }
     }
 
-    bool GPUBenchmark_calc::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) {
+    bool GPUBenchmark_calc::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
+                                      double &time) {
         (void)count;
         (void)datatype;
         (void)nwarmup;
@@ -364,7 +378,8 @@ namespace gpu_suite {
         if (device_is_idle()) {
             device_submit_workload(workload_cycles, workload_calibration);
             if (workload_transfer_size) {
-                d2h_transfer(host_transf_buf, device_transf_buf, workload_transfer_size, transfer_t::WORKLOAD);
+                d2h_transfer(host_transf_buf, device_transf_buf, workload_transfer_size, 
+                             transfer_t::WORKLOAD);
             }
         }
         return true;

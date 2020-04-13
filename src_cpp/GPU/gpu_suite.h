@@ -80,13 +80,18 @@ namespace gpu_suite {
         parser.add_vector<int>("len", "4,128,2048,32768,524288").
                      set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING).
                      set_caption("INT,INT,...");
-        parser.add<std::string>("datatype", "double").set_caption("double|float|int|char");
+        parser.add<std::string>("datatype", "double").
+                     set_caption("double|float|int|char");
         parser.add<int>("ncycles", 1000);
         parser.add<int>("nwarmup", 3); 
-        parser.add<std::string>("mode", "naive").set_caption("naive|cudaaware");
-        parser.add<std::string>("gpuselect", "generic").set_caption("coremap|hwloc|generic");
-        parser.add<std::string>("coretogpu", "").set_caption("- core to GPU devices map, like: 0,1,2,3@0;4,5,6,7@1");
-        parser.add_vector<int>("workload", "0,0", ',', 1, 2).set_caption("- background workload tuning: calc_cycles[,transfer_size]");
+        parser.add<std::string>("mode", "naive").
+                     set_caption("naive|cudaaware");
+        parser.add<std::string>("gpuselect", "generic").
+                     set_caption("coremap|hwloc|generic");
+        parser.add<std::string>("coretogpu", "").
+                     set_caption("- core to GPU devices map, like: 0,1,2,3@0;4,5,6,7@1");
+        parser.add_vector<int>("workload", "0,0", ',', 1, 2).
+                     set_caption("- background workload tuning: calc_cycles[,transfer_size]");
         parser.set_default_current_group();
         return true;
     }
@@ -115,7 +120,8 @@ namespace gpu_suite {
         else if (dt == "float") datatype = MPI_FLOAT;
         else if (dt == "char") datatype = MPI_CHAR;
         else {
-            output << get_name() << ": " << "Unknown data type in 'datatype' option. Use -help for help." << std::endl;
+            output << get_name() << ": " << "Unknown data type in 'datatype' option."
+                                            " Use -help for help." << std::endl;
             return false;
         }
         ncycles = parser.get<int>("ncycles");
@@ -127,36 +133,45 @@ namespace gpu_suite {
 #endif
         mode = parser.get<std::string>("mode");
         if (mode != "naive" && mode != "cudaaware") {
-            output << get_name() << ": " << "Unknown device interaction mode in 'mode' option. . Use -help for help." << std::endl;
+            output << get_name() << ": " << "Unknown device interaction mode in 'mode' option."
+                                            " Use -help for help." << std::endl;
             return false;
         }
+/*
+ * NOTE: this is correct only for OpenMPI        
         if (mode == "cudaaware") {
 #if !defined(MPIX_CUDA_AWARE_SUPPORT) || !MPIX_CUDA_AWARE_SUPPORT
-            output << get_name() << ": " << "CUDA-aware device interaction mode is not supported" << std::endl;
+            output << get_name() << ": " << "CUDA-aware device interaction mode"
+                                            " is not supported" << std::endl;
             return false;
 #endif            
         }
+*/        
         std::string coremapstr;
         std::string gpuselect = parser.get<std::string>("gpuselect");
         if (gpuselect == "coremap") {
             if (parser.is_option_defaulted("coretogpu")) {
-                output << get_name() << ": " << "'coremap' device selection mode implies the option 'coretogpu' to be set" << std::endl;
+                output << get_name() << ": " << "'coremap' device selection mode implies"
+                                                " the option 'coretogpu' to be set" << std::endl;
                 return false;
             }
             coremapstr = parser.get<std::string>("coretogpu");
         } else if (gpuselect == "hwloc") {
 #ifndef WITH_HWLOC
-            output << get_name() << ": " << "Can't use 'hwloc' device selection mode: built without hwloc support" << std::endl;
+            output << get_name() << ": " << "Can't use 'hwloc' device selection mode:"
+                                            " built without hwloc support" << std::endl;
             return false;
 #endif            
         } else if (gpuselect == "generic") {
             coremapstr = ""; // for generic mode of devices selection
         } else {
-            output << get_name() << ": " << "Unknown device selection mode in 'gpuselect' option. . Use -help for help." << std::endl;
+            output << get_name() << ": " << "Unknown device selection mode in 'gpuselect' option."
+                                            " Use -help for help." << std::endl;
             return false;
         }
         if (!parser.is_option_defaulted("coretogpu") && gpuselect != "coremap") {
-            output << get_name() << ": " << "coretogpu option is implies 'coremap' device selection mode to be set." << std::endl; 
+            output << get_name() << ": " << "coretogpu option is implies 'coremap'"
+                                            " device selection mode to be set." << std::endl; 
         }
         std::vector<int> wrld_opts;
         parser.get<int>("workload", wrld_opts);

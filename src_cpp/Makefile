@@ -72,11 +72,11 @@ CXX=mpiicpc
 endif
 override CPPFLAGS += -I.
 
-#override CFLAGS += -O2 -Wall -Wno-long-long
-#override CXXFLAGS += -O2 -Wall -Wextra -pedantic -Wno-long-long -std=c++11
+override CFLAGS += -O0 -Wall -Wno-long-long
+override CXXFLAGS += -O0 -Wall -Wextra -pedantic -Wno-long-long -std=c++11
 
-override CFLAGS += -O0 -g -Wall -Wno-long-long
-override CXXFLAGS += -O0 -g -Wall -Wextra -pedantic -Wno-long-long -std=c++11
+#override CFLAGS += -O0 -g -Wall -Wno-long-long
+#override CXXFLAGS += -O0 -g -Wall -Wextra -pedantic -Wno-long-long -std=c++11
 
 override LDFLAGS += -largsparser -lyaml-cpp 
 ifdef WITH_OPENMP
@@ -129,7 +129,7 @@ $(BINARY): $(IMB_OBJ) $(BENCHMARK_SUITE_OBJ) $(ADDITIONAL_OBJ)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o: %.cu
-	$(NVCC) $(CPPFLAGS) -std=c++11 -gencode $(CUDA_GENCODE) -O0 -g -c -o $@ $<
+	$(NVCC) $(CPPFLAGS) -std=c++11 -gencode $(CUDA_GENCODE) -O0 -c -o $@ $<
 
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<

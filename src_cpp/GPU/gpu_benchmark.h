@@ -72,7 +72,9 @@ namespace gpu_suite {
                                double &time) = 0;
         virtual void run(const scope_item &item) override; 
         virtual void finalize() override;
-        GPUBenchmark() : host_sbuf(nullptr), host_rbuf(nullptr), device_sbuf(nullptr), device_rbuf(nullptr), np(0), rank(0), allocated_size(0), dtsize(0) {}
+        GPUBenchmark() : host_sbuf(nullptr), host_rbuf(nullptr), 
+                         device_sbuf(nullptr), device_rbuf(nullptr), np(0), 
+                         rank(0), allocated_size(0), dtsize(0) {}
         char *get_sbuf();
         char *get_rbuf();
         void update_sbuf(char *, size_t off, size_t size);
@@ -86,14 +88,16 @@ namespace gpu_suite {
         int workload_calibration = 0;
         public:
         virtual void init() override;
-        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
+                               double &time) override;
         virtual void finalize() override;
         DEFINE_INHERITED(GPUBenchmark_calc, BenchmarkSuite<BS_GENERIC>);
     };
 
     class GPUBenchmark_pt2pt : public GPUBenchmark {
         public:
-        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
+                               double &time) override;
         virtual void finalize() override { GPUBenchmark::finalize(); };
         DEFINE_INHERITED(GPUBenchmark_pt2pt, BenchmarkSuite<BS_GENERIC>);
     };
@@ -102,14 +106,16 @@ namespace gpu_suite {
         public:
         GPUBenchmark_calc calc;
         virtual void init() override;
-        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
+                               double &time) override;
         virtual void finalize() override { GPUBenchmark::finalize(); };
         DEFINE_INHERITED(GPUBenchmark_ipt2pt, BenchmarkSuite<BS_GENERIC>);
     };
 
     class GPUBenchmark_allreduce : public GPUBenchmark {
         public:
-        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time) override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
+                               double &time) override;
         virtual void finalize() override { GPUBenchmark::finalize(); };
         DEFINE_INHERITED(GPUBenchmark_allreduce, BenchmarkSuite<BS_GENERIC>);
     };
@@ -119,42 +125,41 @@ namespace gpu_suite {
 #include <sys/time.h>
 
 struct timer {
-  std::string name;
-  bool do_out = false;
-  bool stopped = false;
-  std::stringstream comment;
-  timeval tv[2];
-  long *presult = nullptr;
-  timer(const std::string& _name = "", bool _do_out = false) :
-    name(_name), do_out(_do_out) {
-      gettimeofday(&tv[0], NULL);
-  }
-  long time_diff() {
-    return ((long)tv[1].tv_sec - (long)tv[0].tv_sec) * 1000000L + (long)tv[1].tv_usec - (long)tv[0].tv_usec;
-  }
-  timer(long *_presult) : presult(_presult) {
-    gettimeofday(&tv[0], NULL);
-  }
-  long stop() {
-    gettimeofday(&tv[1], NULL);
-    long diff = time_diff();
-    if (presult) {
-      *presult = diff;
-      return diff;
+    std::string name;
+    bool do_out = false;
+    bool stopped = false;
+    std::stringstream comment;
+    timeval tv[2];
+    long *presult = nullptr;
+    timer(const std::string& _name = "", bool _do_out = false) :
+        name(_name), do_out(_do_out) {
+            gettimeofday(&tv[0], NULL);
+        }
+    long time_diff() {
+        return ((long)tv[1].tv_sec - (long)tv[0].tv_sec) * 1000000L + (long)tv[1].tv_usec - (long)tv[0].tv_usec;
     }
-    if (do_out) {
-      std::cout << name << ": " << "[ "
-                << "time (usec): " << diff;
-      if (comment.str().size()) {
-        std::cout << ", " << "comment: \"" << comment.str() << "\"";
-      }
-      std::cout << " " << "]" << std::endl;
+    timer(long *_presult) : presult(_presult) {
+        gettimeofday(&tv[0], NULL);
     }
-    stopped = true;
-    return diff;
-  }
-  ~timer() throw() {
-      if (!stopped)
-          stop();
-  }
+    long stop() {
+        gettimeofday(&tv[1], NULL);
+        long diff = time_diff();
+        if (presult) {
+            *presult = diff;
+            return diff;
+        }
+        if (do_out) {
+            std::cout << name << ": " << "[ " << "time (usec): " << diff;
+            if (comment.str().size()) {
+                std::cout << ", " << "comment: \"" << comment.str() << "\"";
+            }
+            std::cout << " " << "]" << std::endl;
+        }
+        stopped = true;
+        return diff;
+    }
+    ~timer() throw() {
+        if (!stopped)
+            stop();
+    }
 };

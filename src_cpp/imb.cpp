@@ -274,7 +274,16 @@ int main(int argc, char * *argv)
             }
         }
 
-        // Do aproppriate MPI_Init call
+
+        //---------------------------------------------------------------------
+        // ACTUAL BENCHMARKING
+        //
+        // 1. Preparation phase on suite level
+        if (!BenchmarkSuitesCollection::prepare(parser, benchmarks_to_run, missing, output)) {
+            throw logic_error("One or more benchmark suites failed at preparation stage");
+        }
+
+        // 1a. Do aproppriate MPI_Init call
         string mpi_init_mode = parser.get<string>("thread_level");
         int required_mode, provided_mode;
         if (mpi_init_mode == "single") {
@@ -293,15 +302,6 @@ int main(int argc, char * *argv)
             ;
         } else {
             throw logic_error("wrong value of `thread_level' option");
-        }
-
-
-        //---------------------------------------------------------------------
-        // ACTUAL BENCHMARKING
-        //
-        // 1. Preparation phase on suite level
-        if (!BenchmarkSuitesCollection::prepare(parser, benchmarks_to_run, missing, output)) {
-            throw logic_error("One or more benchmark suites failed at preparation stage");
         }
 
         if (!no_mpi_init_flag) {

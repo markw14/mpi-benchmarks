@@ -89,7 +89,8 @@ void device_submit_workload(int ncycles, int calibration_const)
 
 void d2h_transfer(char *to, char *from, size_t size, transfer_t type)
 {
-    CUDA_CALL(cudaMemcpyAsync(to, from, size, cudaMemcpyDeviceToHost, type == transfer_t::MAIN ? stream_main : stream_workload));
+    CUDA_CALL(cudaMemcpyAsync(to, from, size, cudaMemcpyDeviceToHost, 
+                              type == transfer_t::MAIN ? stream_main : stream_workload));
     if (type == transfer_t::MAIN) {
         CUDA_CALL(cudaStreamSynchronize(stream_main))
     }
@@ -97,7 +98,8 @@ void d2h_transfer(char *to, char *from, size_t size, transfer_t type)
 
 void h2d_transfer(char *to, char *from, size_t size, transfer_t type)
 {
-    CUDA_CALL(cudaMemcpyAsync(to, from, size, cudaMemcpyHostToDevice, type == transfer_t::MAIN ? stream_main : stream_workload));
+    CUDA_CALL(cudaMemcpyAsync(to, from, size, cudaMemcpyHostToDevice, 
+                              type == transfer_t::MAIN ? stream_main : stream_workload));
     if (type == transfer_t::MAIN) {
         CUDA_CALL(cudaStreamSynchronize(stream_main))
     }

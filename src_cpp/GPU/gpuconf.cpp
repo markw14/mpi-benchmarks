@@ -47,7 +47,8 @@ static inline bool threadaffinityisset(int &nthreads) {
         nset += (CPU_ISSET(i, &mask) ? 1 : 0);
     }
     nthreads = nset;
-    // We assume OK: exact one-to-one affinity or hyperthreading/SMT affinity for 2, 3 or 4 threads
+    // We assume OK: exact one-to-one affinity or hyperthreading/SMT affinity 
+    // for 2, 3 or 4 threads
     return nthreads > 0 && nthreads < 5 && nthreads != NC;
 }
 
@@ -72,7 +73,8 @@ static inline int getthreadaffinity() {
 #endif
 
 namespace helpers {
-static inline void str_split(std::string s, char delimiter, std::vector<std::string>& result) {
+static inline void str_split(std::string s, char delimiter, 
+                             std::vector<std::string>& result) {
     result.clear();
     std::string token;
     std::istringstream token_stream(s);
@@ -81,15 +83,15 @@ static inline void str_split(std::string s, char delimiter, std::vector<std::str
     }
 }
 
-static inline void vstr_to_vint(std::vector<std::string>& from, std::vector<int>& to) {
+static inline void vstr_to_vint(std::vector<std::string>& from, 
+                                std::vector<int>& to) {
     to.clear();
     for (auto& s : from) {
         int x = std::stoi(s);
         to.push_back(x);
     }
 }
-}  // namespace helpers
-
+}
 void gpu_conf::init_generic() {
     core_to_gpu.clear();
     size_t NC = sys::getnumcores();
@@ -156,11 +158,13 @@ void gpu_conf::init_from_str(const std::string &str) {
             cores.insert(cores.end(), local_cores.begin(), local_cores.end());
         }
     } catch (std::runtime_error& ex) {
-        std::cout << std::string("gpuconf: handling/parsing conf string failed, falling back to generic: ") + ex.what() << std::endl;
+        std::cout << std::string("gpuconf: handling/parsing conf string failed,"
+                                 " falling back to generic: ") + ex.what() << std::endl;
         init_generic();
         return;
     } catch (...) {
-        std::cout << "gpuconf: handling/parsing conf string, falling back to generic." << std::endl;
+        std::cout << "gpuconf: handling/parsing conf string,"
+                     " falling back to generic." << std::endl;
         init_generic();
         return;
     }
@@ -176,7 +180,8 @@ bool gpu_conf_init(const std::string &str)
     }
     int nthreads = 0;
     if (!sys::threadaffinityisset(nthreads)) {
-        std::cout << "WARNING: thread affinity seems to be not set, can't choose relevant GPU device" << std::endl;
+        std::cout << "WARNING: thread affinity seems to be not set,"
+                     " can't choose relevant GPU device" << std::endl;
         return true;
     }
     int gpu = conf.gpu_by_core(sys::getthreadaffinity());

@@ -21,7 +21,7 @@ struct context {
 extern void device_set_current(const std::string &pci_id);
 
 static void recursive_find_devices(context &ctx, hwloc_obj_t parent, hwloc_obj_t child) {
-    const unsigned nvidia = 0x10de;
+    const unsigned NVIDIA = 0x10de;
     hwloc_obj_t device = hwloc_get_next_child(ctx.topology, parent, child);
     if (device == nullptr) {
         return;
@@ -29,21 +29,26 @@ static void recursive_find_devices(context &ctx, hwloc_obj_t parent, hwloc_obj_t
         recursive_find_devices(ctx, device, nullptr);
         recursive_find_devices(ctx, parent, device);
     } else {
-        if (device->attr->pcidev.vendor_id == nvidia) {
-            //ctx.gpus[ctx.cnt++] = device;
+        if (device->attr->pcidev.vendor_id == NVIDIA) {
             ctx.add(device);
         }
         recursive_find_devices(ctx, parent, device);
     }
 }
 
-#define RETURN_FALSE_IF_NULL(x) { if (x == nullptr) { std::cerr << "FATAL: hwloc_iface: no GPU devices found" << std::endl; return false; } }
+#define RETURN_FALSE_IF_NULL(x) \
+    { if (x == nullptr) { \
+          std::cerr << "FATAL: hwloc_iface: no GPU devices found" << std::endl; \
+          return false; \
+    }  }
+
 
 bool gpu_conf_init_with_hwloc()
 {
     context ctx;
     auto &topology = ctx.topology;
-    const unsigned long flags = HWLOC_TOPOLOGY_FLAG_IO_DEVICES | HWLOC_TOPOLOGY_FLAG_IO_BRIDGES;
+    const unsigned long flags = HWLOC_TOPOLOGY_FLAG_IO_DEVICES | 
+                                HWLOC_TOPOLOGY_FLAG_IO_BRIDGES;
     //const unsigned long flags = HWLOC_TYPE_FILTER_KEEP_IMPORTANT; -- for hwloc2...
     HWLOC_CALL(hwloc_topology_init(&topology));
     HWLOC_CALL(hwloc_topology_set_flags(topology, flags));
@@ -64,12 +69,15 @@ bool gpu_conf_init_with_hwloc()
     if (ctx.gpus[0] == 0) {
          RETURN_FALSE_IF_NULL(nullptr);
     } else {
-        // NOTE: we always go with device 0! This is not OK if we have more than 1 device per
-        // NUMA node. The problem is that we have no information to understand which device to pick.
+        // NOTE: we always go with device 0! This is not OK if we 
+        // have more than 1 device per NUMA node. The problem is that we have 
+        // no information to understand which device to pick.
         const size_t device_num = 0;
         char pci_bus_id[16];
-        sprintf(pci_bus_id, "%.2x:%.2x:%.2x.%x", ctx.gpus[device_num]->attr->pcidev.domain, ctx.gpus[device_num]->attr->pcidev.bus,
-                                                 ctx.gpus[device_num]->attr->pcidev.dev, ctx.gpus[device_num]->attr->pcidev.func);
+        sprintf(pci_bus_id, "%.2x:%.2x:%.2x.%x", ctx.gpus[device_num]->attr->pcidev.domain, 
+                                                 ctx.gpus[device_num]->attr->pcidev.bus,
+                                                 ctx.gpus[device_num]->attr->pcidev.dev, 
+                                                 ctx.gpus[device_num]->attr->pcidev.func);
         device_set_current(pci_bus_id);
     }
     return true;

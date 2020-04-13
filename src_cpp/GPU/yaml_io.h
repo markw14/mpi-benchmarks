@@ -12,7 +12,8 @@ struct YamlOutputMaker {
         yaml_out << YAML::Key << block << YAML::Value;
         yaml_out << YAML::Flow << YAML::BeginMap;
         for (auto &item : kv) {
-            yaml_out << YAML::Key << YAML::Flow << item.first << YAML::Value << item.second;
+            yaml_out << YAML::Key << YAML::Flow << item.first 
+                     << YAML::Value << item.second;
         }
         yaml_out << YAML::Flow << YAML::EndMap;
     }
