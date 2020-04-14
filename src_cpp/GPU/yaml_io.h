@@ -3,7 +3,7 @@
 #ifdef WITH_YAML_CPP
 
 struct YamlOutputMaker {
-    const std::string &block;
+    std::string block;
     YamlOutputMaker(const std::string &_block) : block(_block) {}
     std::map<const std::string, double> kv;
     void add(const std::string &key, double value) { kv[key] = value; }

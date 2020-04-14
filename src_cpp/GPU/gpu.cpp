@@ -315,7 +315,8 @@ namespace gpu_suite {
         size_t b = (size_t)count * (size_t)dtsize;
         size_t n = allocated_size / b;
         double t1 = 0, t2 = 0;
-        for(int i = 0; i < ncycles + nwarmup; i++) {
+        time = 0;
+        for (int i = 0; i < ncycles + nwarmup; i++) {
             if (i >= nwarmup) t1 = MPI_Wtime();
             update_sbuf(get_sbuf(), (i%n)*b, b);
             MPI_Allreduce((char *)get_sbuf() + (i%n)*b, (char *)get_rbuf() + (i%n)*b, count, 
