@@ -82,6 +82,7 @@ namespace gpu_suite {
                      set_caption("INT,INT,...");
         parser.add<std::string>("datatype", "double").
                      set_caption("double|float|int|char");
+        parser.add<int>("stride", 0);
         parser.add<int>("ncycles", 1000);
         parser.add<int>("nwarmup", 3); 
         parser.add<std::string>("mode", "naive").
@@ -102,6 +103,7 @@ namespace gpu_suite {
     YAML::Emitter yaml_out;
 #endif    
     std::string yaml_outfile;
+    int stride;
     int ncycles, nwarmup;
     std::string mode;
     int workload_cycles, workload_transfer_size;
@@ -124,6 +126,7 @@ namespace gpu_suite {
                                             " Use -help for help." << std::endl;
             return false;
         }
+        stride = parser.get<int>("stride");
         ncycles = parser.get<int>("ncycles");
         nwarmup = parser.get<int>("nwarmup");
 #ifdef WITH_YAML_CPP        
@@ -221,6 +224,7 @@ namespace gpu_suite {
 #ifdef WITH_YAML_CPP        
         HANDLE_PARAMETER(YAML::Emitter, yaml_out);
 #endif        
+        HANDLE_PARAMETER(int, stride);
         HANDLE_PARAMETER(int, ncycles);
         HANDLE_PARAMETER(int, nwarmup);
         HANDLE_PARAMETER(std::string, mode);

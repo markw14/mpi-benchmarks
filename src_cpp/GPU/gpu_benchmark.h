@@ -68,8 +68,8 @@ namespace gpu_suite {
         bool is_cuda_aware = false;
         public:
         virtual void init() override;
-        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
-                               double &time) = 0;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int stride, 
+                               int nwarmup, int ncycles, double &time) = 0;
         virtual void run(const scope_item &item) override; 
         virtual void finalize() override;
         GPUBenchmark() : host_sbuf(nullptr), host_rbuf(nullptr), 
@@ -88,16 +88,16 @@ namespace gpu_suite {
         int workload_calibration = 0;
         public:
         virtual void init() override;
-        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
-                               double &time) override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int stride,
+                               int nwarmup, int ncycles, double &time) override;
         virtual void finalize() override;
         DEFINE_INHERITED(GPUBenchmark_calc, BenchmarkSuite<BS_GENERIC>);
     };
 
     class GPUBenchmark_pt2pt : public GPUBenchmark {
         public:
-        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
-                               double &time) override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int stride,
+                               int nwarmup, int ncycles, double &time) override;
         virtual void finalize() override { GPUBenchmark::finalize(); };
         DEFINE_INHERITED(GPUBenchmark_pt2pt, BenchmarkSuite<BS_GENERIC>);
     };
@@ -106,16 +106,16 @@ namespace gpu_suite {
         public:
         GPUBenchmark_calc calc;
         virtual void init() override;
-        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
-                               double &time) override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int stride,
+                               int nwarmup, int ncycles, double &time) override;
         virtual void finalize() override { GPUBenchmark::finalize(); };
         DEFINE_INHERITED(GPUBenchmark_ipt2pt, BenchmarkSuite<BS_GENERIC>);
     };
 
     class GPUBenchmark_allreduce : public GPUBenchmark {
         public:
-        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
-                               double &time) override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int stride,
+                               int nwarmup, int ncycles, double &time) override;
         virtual void finalize() override { GPUBenchmark::finalize(); };
         DEFINE_INHERITED(GPUBenchmark_allreduce, BenchmarkSuite<BS_GENERIC>);
     };

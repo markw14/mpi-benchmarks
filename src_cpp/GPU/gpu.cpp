@@ -96,23 +96,35 @@ namespace gpu_suite {
     
     void GPUBenchmark::run(const scope_item &item) { 
         GET_PARAMETER(MPI_Datatype, datatype);
+        GET_PARAMETER(int, stride);
         GET_PARAMETER(int, ncycles);
         GET_PARAMETER(int, nwarmup);
         double time; 
-        bool done = benchmark(item.len, datatype, nwarmup, ncycles, time);
+        bool done = benchmark(item.len, datatype, stride, nwarmup, ncycles, time);
         if (!done) {
             results[item.len] = result { false, 0.0 };
         }
     }
 
     void GPUBenchmark::finalize() { 
+        GET_PARAMETER(int, stride);
+        int group;
+        if (!set_stride(rank, np, stride, group))
+            return;
 #ifdef WITH_YAML_CPP        
         GET_PARAMETER(YAML::Emitter, yaml_out);
         YamlOutputMaker yaml_tmin("tmin");
         YamlOutputMaker yaml_tmax("tmax");
         YamlOutputMaker yaml_tavg("tavg");
         YamlOutputMaker yaml_topo("topo");
-#endif        
+#endif   
+        if (rank == 0 && results.size()) {
+            std::cout << get_name() << ": " << "{ "
+                      << "np: " << np << ", "
+                      << "stride: " << stride 
+                      << " }" << std::endl;
+
+        }     
         for (auto it = results.begin(); it != results.end(); ++it) {
             int len = it->first;
             double time = (it->second).time, tmin = 0, tmax = 0, tavg = 0;
@@ -147,6 +159,7 @@ namespace gpu_suite {
         }
 #ifdef WITH_YAML_CPP        
         yaml_topo.add("np", np);
+        yaml_topo.add("stride", np);
         WriteOutYaml(yaml_out, get_name(), {yaml_tavg, yaml_topo});
 #endif
         // NOTE: can't free pinned memory in destructor, CUDA runtime complains 
@@ -185,9 +198,9 @@ namespace gpu_suite {
         }        
     }
 
-    bool GPUBenchmark_pt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, 
-                                       int ncycles, double &time) {
-        int stride = 0, group;
+    bool GPUBenchmark_pt2pt::benchmark(int count, MPI_Datatype datatype, int stride, 
+                                       int nwarmup, int ncycles, double &time) {
+        int group;
         if (!set_stride(rank, np, stride, group)) {
             MPI_Barrier(MPI_COMM_WORLD);
             return false;
@@ -234,9 +247,9 @@ namespace gpu_suite {
         calc.init();
     }
 
-    bool GPUBenchmark_ipt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, 
-                                        int ncycles, double &time) {
-        int stride = 0, group;
+    bool GPUBenchmark_ipt2pt::benchmark(int count, MPI_Datatype datatype, int stride,
+                                        int nwarmup, int ncycles, double &time) {
+        int group;
         if (!set_stride(rank, np, stride, group)) {
             MPI_Barrier(MPI_COMM_WORLD);
             return false;
@@ -256,7 +269,7 @@ namespace gpu_suite {
                           tag, MPI_COMM_WORLD, &request[0]);
                 MPI_Irecv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, 
                           MPI_ANY_TAG, MPI_COMM_WORLD, &request[1]);
-                calc.benchmark(count, datatype, 0, 1, local_ctime);
+                calc.benchmark(count, datatype, 0, 0, 1, local_ctime);
                 if (i >= nwarmup) {
                     total_ctime += local_ctime;
                 }
@@ -274,7 +287,7 @@ namespace gpu_suite {
                           tag, MPI_COMM_WORLD, &request[0]);
                 MPI_Irecv((char*)get_rbuf() + (i%n)*b, count, datatype, pair, 
                           MPI_ANY_TAG, MPI_COMM_WORLD, &request[1]);
-                calc.benchmark(count, datatype, 0, 1, local_ctime);
+                calc.benchmark(count, datatype, 0, 0, 1, local_ctime);
                 if (i >= nwarmup) {
                     total_ctime += local_ctime;
                 }
@@ -310,8 +323,9 @@ namespace gpu_suite {
 #endif
     }
 
-    bool GPUBenchmark_allreduce::benchmark(int count, MPI_Datatype datatype, int nwarmup, 
-                                           int ncycles, double &time) {
+    bool GPUBenchmark_allreduce::benchmark(int count, MPI_Datatype datatype, int stride,
+                                           int nwarmup, int ncycles, double &time) {
+        (void)stride;
         size_t b = (size_t)count * (size_t)dtsize;
         size_t n = allocated_size / b;
         double t1 = 0, t2 = 0;
@@ -365,10 +379,11 @@ namespace gpu_suite {
         }
     }
 
-    bool GPUBenchmark_calc::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, 
-                                      double &time) {
+    bool GPUBenchmark_calc::benchmark(int count, MPI_Datatype datatype, int stride,
+                                      int nwarmup, int ncycles, double &time) {
         (void)count;
         (void)datatype;
+        (void)stride;
         (void)nwarmup;
         (void)ncycles;
         (void)time;
