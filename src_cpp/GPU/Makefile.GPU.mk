@@ -54,6 +54,7 @@ override CPPFLAGS += -IGPU
 BENCHMARK_SUITE_SRC += GPU/gpu.cpp
 BENCHMARK_SUITE_SRC += GPU/gpuconf.cpp
 BENCHMARK_SUITE_SRC += GPU/alloc.cu
+BENCHMARK_SUITE_SRC += GPU/mpialloc.cpp
 BENCHMARK_SUITE_SRC += GPU/device_routines.cu
 BENCHMARK_SUITE_SRC += GPU/hwloc_iface.cpp
 

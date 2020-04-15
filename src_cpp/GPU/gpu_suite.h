@@ -61,6 +61,7 @@ goods and services.
 #include "scope.h"
 #include "utils.h"
 #include "argsparser.h"
+#include "alloc.h"
 
 extern bool gpu_conf_init(const std::string &);
 #ifdef WITH_HWLOC
@@ -87,6 +88,8 @@ namespace gpu_suite {
         parser.add<int>("nwarmup", 3); 
         parser.add<std::string>("mode", "naive").
                      set_caption("naive|cudaaware");
+        parser.add<std::string>("allocmode", "mpi").
+                     set_caption("mpi|cuda");
         parser.add<std::string>("gpuselect", "generic").
                      set_caption("coremap|hwloc|generic");
         parser.add<std::string>("coretogpu", "").
@@ -105,6 +108,7 @@ namespace gpu_suite {
     std::string yaml_outfile;
     int stride;
     int ncycles, nwarmup;
+    host_alloc_t atype;
     std::string mode;
     int workload_cycles, workload_transfer_size;
     template <> bool BenchmarkSuite<BS_GENERIC>::prepare(const args_parser &parser,
@@ -150,6 +154,16 @@ namespace gpu_suite {
 #endif            
         }
 */        
+        std::string atype_str = parser.get<std::string>("allocmode");
+        if (atype_str == "mpi") {
+            atype = host_alloc_t::ALLOC_MPI;
+        } else if (atype_str == "cuda") {
+            atype = host_alloc_t::ALLOC_CUDA;
+        } else {
+            output << get_name() << ": " << "Unknown host memory allocation mode in 'allocmode' option."
+                                            " Use -help for help." << std::endl;
+            return false;
+        }
         std::string coremapstr;
         std::string gpuselect = parser.get<std::string>("gpuselect");
         if (gpuselect == "coremap") {
@@ -228,6 +242,7 @@ namespace gpu_suite {
         HANDLE_PARAMETER(int, ncycles);
         HANDLE_PARAMETER(int, nwarmup);
         HANDLE_PARAMETER(std::string, mode);
+        HANDLE_PARAMETER(host_alloc_t, atype);
         HANDLE_PARAMETER(int, workload_cycles);
         HANDLE_PARAMETER(int, workload_transfer_size);
         return result;

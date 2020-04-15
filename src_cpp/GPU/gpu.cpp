@@ -73,6 +73,7 @@ namespace gpu_suite {
         GET_PARAMETER(std::vector<int>, len);
         GET_PARAMETER(MPI_Datatype, datatype);
         GET_PARAMETER(std::string, mode);
+        GET_PARAMETER(host_alloc_t, atype);
         scope = std::make_shared<VarLenScope>(len);
         MPI_Type_size(datatype, &dtsize);
         size_t size_to_alloc = (size_t)scope->get_max_len() * (size_t)dtsize;
@@ -80,8 +81,8 @@ namespace gpu_suite {
             size_to_alloc = ASSUMED_CACHE_SIZE * 3;
         device_mem_alloc(device_sbuf, size_to_alloc);
         device_mem_alloc(device_rbuf, size_to_alloc);
-        host_mem_alloc(host_sbuf, size_to_alloc);
-        host_mem_alloc(host_rbuf, size_to_alloc);
+        host_mem_alloc(host_sbuf, size_to_alloc, atype);
+        host_mem_alloc(host_rbuf, size_to_alloc, atype);
         if (host_rbuf == nullptr || host_sbuf == nullptr)
             throw std::runtime_error("GPUBenchmark: memory allocation error.");
         if (device_rbuf == nullptr || device_sbuf == nullptr)
@@ -108,9 +109,9 @@ namespace gpu_suite {
 
     void GPUBenchmark::finalize() { 
         GET_PARAMETER(int, stride);
+        GET_PARAMETER(host_alloc_t, atype);
         int group;
-        if (!set_stride(rank, np, stride, group))
-            return;
+        set_stride(rank, np, stride, group);
 #ifdef WITH_YAML_CPP        
         GET_PARAMETER(YAML::Emitter, yaml_out);
         YamlOutputMaker yaml_tmin("tmin");
@@ -164,8 +165,8 @@ namespace gpu_suite {
 #endif
         // NOTE: can't free pinned memory in destructor, CUDA runtime complains 
         // it's too late
-        host_mem_free(host_sbuf);
-        host_mem_free(host_rbuf);
+        host_mem_free(host_sbuf, atype);
+        host_mem_free(host_rbuf, atype);
         device_mem_free(device_sbuf);
         device_mem_free(device_rbuf);
     }
@@ -354,11 +355,12 @@ namespace gpu_suite {
 
     void GPUBenchmark_calc::init() {
         GPUBenchmark::init();
+        GET_PARAMETER(host_alloc_t, atype);
         GET_PARAMETER(int, workload_cycles);
         GET_PARAMETER(int, workload_transfer_size);
         if (workload_cycles && workload_transfer_size) {
             device_mem_alloc(device_transf_buf, workload_transfer_size);
-            host_mem_alloc(host_transf_buf, workload_transfer_size);
+            host_mem_alloc(host_transf_buf, workload_transfer_size, atype);
         }
 
         // Workload execution time calibration procedure. Trying to tune number of cycles 
@@ -403,11 +405,12 @@ namespace gpu_suite {
     
     void GPUBenchmark_calc::finalize() {
         GPUBenchmark::finalize();
+        GET_PARAMETER(host_alloc_t, atype);
         GET_PARAMETER(int, workload_cycles);
         GET_PARAMETER(int, workload_transfer_size);
         if (workload_cycles && workload_transfer_size) {
             device_mem_free(device_transf_buf);
-            host_mem_free(host_transf_buf);
+            host_mem_free(host_transf_buf, atype);
         }
     }
 
