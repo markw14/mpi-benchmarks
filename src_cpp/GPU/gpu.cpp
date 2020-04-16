@@ -342,10 +342,6 @@ namespace gpu_suite {
                 time += (t2 - t1);
             }
             barrier(rank, np);
-            barrier(rank, np);
-            barrier(rank, np);
-            barrier(rank, np);
-            barrier(rank, np);
         }
         time /= ncycles;
         MPI_Barrier(MPI_COMM_WORLD);

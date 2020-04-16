@@ -106,6 +106,49 @@ Most important options
                        used. Second integer value for this option is amount of data in bytes to do
                        background memory transfer after each workload portion finish. If this value
                        is 0, no background memory transfers performed.
+-output filename.yaml  - turns on output or the benchmark result into YAML file and sets up the 
+                         name of this file. If this opyion is set, output is
+                         structured form is performed in addition to normal
+                         output to stderr.
+-stride INT  - sets up the stride for point-to-point style benchmarks. Stride is a distance between 
+               ranks in each pair performing MPI exchanges. The value "1"
+               means that point-to-point operations are performed among pairs of neighbor
+               ranks: like (0,1), (2,3), etc. Sometimes it is useful to change stride to value equal to
+               PPN, which ensure cross-node exchanges only. Special value of stride: 0 is
+               reserved for stride which is equal to half of MPI_COMM_WORLD size. The value
+               of 0 is a default value for this option. 
+-allocmode cuda|mpi  - one can make choise from two allocation styles for CPU
+                       memory buffers which are used in this benchmark suite. "cuda" style of
+                       allocation assumes cudaHostAlloc/cudaHostFree API usage for CPU memory
+                       allocation. This is a standard way to allocate memory for any CUDA program
+                       which uses async memory transfers and/or wants to ensure maximum host-device
+                       transfer throughput. "mpi" style of allocation uses MPI-specific API with
+                       MPI_alloc_mem/MPI_free_mem calls which is a standard way for MPI programs. In
+                       "mpi" style allocted memory is also registered with cudaHostRegister call,
+                       which is equivalent of cudaHostAlloc for pre-allocated memory. "mpi" style
+                       of allocation is default.
+
+
+Other benchmark options:
+------------------------
+
+-dump config.yaml  - dump the set of options given currently in command line
+                     into structured YAML-file. This file can be used later to
+                     replicate the same benchmark option in further executions.
+-load config.yaml  - load options from structured YAML-file
+-list  - outputs the names of benchmarks in this suite
+
+-thread_level level  - sets the therad level for MPI_Init call (the same way as other IMB benchmarks)
+-input filename  - sets the filename with benchmark names to run (the same way as other IMB benchmarks)
+-include benchmark[,benchmark,[...] - include benchmarks to execution plan (the same way as other IMB benchmarks)
+-exclude benchmark[,benchmark,[...] - exclude benchmarks from execution plan (the same way as other IMB benchmarks)
+
+
+
+
+
+                
+
 
   
 
