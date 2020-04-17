@@ -60,7 +60,7 @@ goods and services.
 #include "benchmark_suites_collection.h"
 #include "scope.h"
 #include "utils.h"
-#include "argsparser.h"
+#include "args_parser.h"
 #include "alloc.h"
 
 extern bool gpu_conf_init(const std::string &);
@@ -90,8 +90,13 @@ namespace gpu_suite {
                      set_caption("naive|cudaaware");
         parser.add<std::string>("allocmode", "mpi").
                      set_caption("mpi|cuda");
+#ifdef WITH_HWLOC        
         parser.add<std::string>("gpuselect", "generic").
                      set_caption("coremap|hwloc|generic");
+#else
+        parser.add<std::string>("gpuselect", "generic").
+                     set_caption("coremap|generic");
+#endif        
         parser.add<std::string>("coretogpu", "").
                      set_caption("- core to GPU devices map, like: 0,1,2,3@0;4,5,6,7@1");
         parser.add_vector<int>("workload", "0,0", ',', 1, 2).
@@ -167,14 +172,16 @@ namespace gpu_suite {
         std::string coremapstr;
         std::string gpuselect = parser.get<std::string>("gpuselect");
         if (gpuselect == "coremap") {
-            if (parser.is_option_defaulted("coretogpu")) {
+            
+            if (parser.get<std::string>("coretogpu") == "") {
                 output << get_name() << ": " << "'coremap' device selection mode implies"
                                                 " the option 'coretogpu' to be set" << std::endl;
                 return false;
             }
             coremapstr = parser.get<std::string>("coretogpu");
-        } else if (gpuselect == "hwloc") {
+        } 
 #ifndef WITH_HWLOC
+        else if (gpuselect == "hwloc") {
             output << get_name() << ": " << "Can't use 'hwloc' device selection mode:"
                                             " built without hwloc support" << std::endl;
             return false;
@@ -186,7 +193,7 @@ namespace gpu_suite {
                                             " Use -help for help." << std::endl;
             return false;
         }
-        if (!parser.is_option_defaulted("coretogpu") && gpuselect != "coremap") {
+        if (parser.get<std::string>("coretogpu") != "" && gpuselect != "coremap") {
             output << get_name() << ": " << "coretogpu option is implies 'coremap'"
                                             " device selection mode to be set." << std::endl; 
         }

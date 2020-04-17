@@ -78,7 +78,6 @@ override CXXFLAGS += -O2 -Wall -Wextra -pedantic -Wno-long-long -std=c++11
 #override CFLAGS += -O0 -g -Wall -Wno-long-long
 #override CXXFLAGS += -O0 -g -Wall -Wextra -pedantic -Wno-long-long -std=c++11
 
-override LDFLAGS += -largsparser -lyaml-cpp 
 ifdef WITH_OPENMP
 override CFLAGS += -fopenmp
 override CXXFLAGS += -fopenmp
@@ -104,7 +103,7 @@ CUDA_HOME ?= $(shell echo $$(dirname $$(which $(NVCC)))/..)
 
 all: $(BINARY)
 
-IMB_SRC = imb.cpp scope.cpp
+IMB_SRC = imb.cpp scope.cpp args_parser.cpp
 IMB_OBJ = $(IMB_SRC:.cpp=.o)
 
 BENCHMARK_SUITE_SRC += benchmark_suites_collection.cpp

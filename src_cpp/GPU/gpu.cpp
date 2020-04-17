@@ -129,9 +129,10 @@ namespace gpu_suite {
         for (auto it = results.begin(); it != results.end(); ++it) {
             int len = it->first;
             double time = (it->second).time, tmin = 0, tmax = 0, tavg = 0;
+            const double extremely_big_time_mark = 1e32;
             int is_done = ((it->second).done ? 1 : 0), nexec = 0;
             MPI_Reduce(&is_done, &nexec, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-            if (!(it->second).done) time = 1e32;
+            if (!(it->second).done) time = extremely_big_time_mark;
             MPI_Reduce(&time, &tmin, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
             if (!(it->second).done) time = 0.0;
             MPI_Reduce(&time, &tmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -314,11 +315,12 @@ namespace gpu_suite {
         int mask = 0x1;
         int dst, src;
         int tmp = 0;
+        const int tag = 1010;
         for (; mask < np; mask <<= 1) {
             dst = (rank + mask) % np;
             src = (rank - mask + np) % np;
-            MPI_Sendrecv(&tmp, 0, MPI_BYTE, dst, 1010,
-                         &tmp, 0, MPI_BYTE, src, 1010,
+            MPI_Sendrecv(&tmp, 0, MPI_BYTE, dst, tag,
+                         &tmp, 0, MPI_BYTE, src, tag,
                          MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 #endif
@@ -362,17 +364,22 @@ namespace gpu_suite {
         // Workload execution time calibration procedure. Trying to tune number of cycles 
         // so that workload execution+sync time is about 1000 usec
         workload_calibration = 1;
-        for (int i = 0; i < 10; i++) {             
+        const int workload_tune_maxiter = 13;
+        const long target_exec_time_in_usecs = 1000L;
+        const long good_enough_calibration = (long)(0.9 * target_exec_time_in_usecs);
+        for (int i = 0; i < workload_tune_maxiter; i++) {             
             timer t;
             device_submit_workload(1, workload_calibration);
             device_sync_context();
-            int usec = t.stop();
+            long execution_time_in_usecs = (long)t.stop();
+            // Skip 3 first time estimations: they often include some GPU API 
+            // initialization time
             if (i < 3)
                 continue;
-            if (usec == 0)
+            if (execution_time_in_usecs == 0)
                 break;
-            if (usec < 900L) {
-                workload_calibration += (1 + int(1000L/usec));
+            if (execution_time_in_usecs < good_enough_calibration) {
+                workload_calibration += (1 + int(target_exec_time_in_usecs / execution_time_in_usecs));
             }
         }
     }

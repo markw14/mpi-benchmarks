@@ -55,7 +55,7 @@ goods and services.
 #include <string.h>
 
 #include <memory>
-#include "argsparser.h"
+#include "args_parser.h"
 #include "benchmark.h"
 #include "benchmark_suites_collection.h"
 #include "utils.h"
@@ -74,13 +74,6 @@ int main(int argc, char * *argv)
     const char *program_name = "Intel(R) MPI Benchmarks 2019";
     std::ostringstream output;
 
-    // Some unit tests for args parser
-#if 0
-    check_parser();
-    return 1;
-#endif    
-
-    
     try {
         // Allow very first init steps for each suite -- each benchmark
         // is allowed to init flags and do other fundamental things before MPI_Init and

@@ -84,7 +84,8 @@ __global__ void workload(int ncycles, int CALIBRATION_CONST) {
 
 void device_submit_workload(int ncycles, int calibration_const)
 {
-    workload<10><<<1, 1, 0, stream_workload>>>(ncycles, calibration_const);
+    constexpr int array_dim = 10;
+    workload<array_dim><<<1, 1, 0, stream_workload>>>(ncycles, calibration_const);
 }
 
 void d2h_transfer(char *to, char *from, size_t size, transfer_t type)

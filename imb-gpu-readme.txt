@@ -11,12 +11,8 @@ gpu_allreduce  - collective operation MPI_Allreduce() benchmark on GPU memory.
 Build instructions.
 -------------------
 
-It is necessary to build dependencies for the benchmark first. This is
-automated by script ./download-and-build.sh in src_cpp/GPU/thirdparty
-directory.
-
-When build is complete, the benchmark can be built by running 'make' from 
-src_cpp/ directory. It is normally required to set the desired MPI C++ compiler
+The benchmark can be built by running 'make' from src_cpp/ directory or
+from root directory. It is normally required to set the desired MPI C++ compiler
 name in CXX environment variable before running make. CXXFLAGS and LDFLAGS
 environment variables are also available to be set up before running make.
 
@@ -43,16 +39,11 @@ core-number/number-of-cores ratio to number of visible GPU devices
 to pick the device to use wth respect to hardware locality. It's up to user
 how to construct the map, nut some utility may automate this.
 
-'hwloc' uses hwloc-1.11 library at runtime to determine the best hardware locality 
-at runtime. It relies on PCI topology info. The mode is experimental and may
-fail to find correct PCI bridge or other hardware traits on some systems. If
-it fails, the way out is to go back to 'generic' or 'coremap' options.
-
 If 'generic' or 'coremap' options see that there is no CPU affinity set,
 they refuse to pick a GPU device, and CUDA library will run with default
 device as it is described in CUDA docs.
 
-Please note, that 'hwloc' and 'coremap' options ignore CUDA_VISIBLE_DEVICES
+Please note, that 'coremap' option ignores CUDA_VISIBLE_DEVICES
 setting.
 
 Optional background device workload procedure is implemented for gpu_ipt2pt
@@ -79,16 +70,15 @@ Most important options
                          transfers on their own. 'cudaaware' mode requires support of this 'extension' from MPI 
                          library, otherwise benchmark in this mode may just
                          crash with memory error.
--gpuselect coremap|hwloc|generic  - the way benchmark sets up the GPU device id for each rank. 'coremap' means that
+-gpuselect coremap|generic  - the way benchmark sets up the GPU device id for each rank. 'coremap' means that
                                     there is a mapping between cores and GPU-ids, which is given explicitely with 
                                     'coretogpu' option. The mapping string in the expected form can be received 
-                                    in automated way with some third-party utilities. 'hwloc' means that nearest 
-                                    GPU for each rank is deduced by hwloc library calls (see hwloc_iface.cpp). hwloc
-                                    library source code is supplied in third-party directory. 'generic' is the way
-                                    when number of currently visible CUDA devices is spread among ranks on a node in
-                                    a fair way regardless the hardware aspects. The order of ranks in a node is 
-                                    determined indirectly by checking the affinity mask at runtime. If no affinity
-                                    is set, 'generic' mode doesn't do any active device setup.
+                                    in automated way with some third-party utilities. 
+                                    'generic' is the way when number of currently visible CUDA devices 
+                                    is spread among ranks on a node in a fair way regardless the hardware aspects. 
+                                    The order of ranks in a node is determined indirectly by checking the affinity 
+                                    mask at runtime. If no affinity is set, 'generic' mode doesn't do any active 
+                                    device setup.
 -coretogpu <MAP>  - sets up a core to GPU map. The form is: coreN,coreM,...@gpuX;coreP,coreQ,...@gpuY;...
                     where <coreN> is a non-negative integer number meaning the physical core number, <gpuN> is 
                     non-negative integer number meaning the GPU device id as it is perceived by CUDA runtime. Core 
@@ -106,10 +96,6 @@ Most important options
                        used. Second integer value for this option is amount of data in bytes to do
                        background memory transfer after each workload portion finish. If this value
                        is 0, no background memory transfers performed.
--output filename.yaml  - turns on output or the benchmark result into YAML file and sets up the 
-                         name of this file. If this opyion is set, output is
-                         structured form is performed in addition to normal
-                         output to stderr.
 -stride INT  - sets up the stride for point-to-point style benchmarks. Stride is a distance between 
                ranks in each pair performing MPI exchanges. The value "1"
                means that point-to-point operations are performed among pairs of neighbor
@@ -132,10 +118,6 @@ Most important options
 Other benchmark options:
 ------------------------
 
--dump config.yaml  - dump the set of options given currently in command line
-                     into structured YAML-file. This file can be used later to
-                     replicate the same benchmark option in further executions.
--load config.yaml  - load options from structured YAML-file
 -list  - outputs the names of benchmarks in this suite
 
 -thread_level level  - sets the therad level for MPI_Init call (the same way as other IMB benchmarks)

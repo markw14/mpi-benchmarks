@@ -125,6 +125,7 @@ namespace gpu_suite {
 #include <sys/time.h>
 
 struct timer {
+    const time_t sec_to_usec = 1000000L;
     std::string name;
     bool do_out = false;
     bool stopped = false;
@@ -136,7 +137,7 @@ struct timer {
             gettimeofday(&tv[0], NULL);
         }
     long time_diff() {
-        return ((long)tv[1].tv_sec - (long)tv[0].tv_sec) * 1000000L + (long)tv[1].tv_usec - (long)tv[0].tv_usec;
+        return ((long)tv[1].tv_sec - (long)tv[0].tv_sec) * sec_to_usec + (long)tv[1].tv_usec - (long)tv[0].tv_usec;
     }
     timer(long *_presult) : presult(_presult) {
         gettimeofday(&tv[0], NULL);

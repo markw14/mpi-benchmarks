@@ -2,7 +2,7 @@
 #include "cuda_helpers.h"
 
 extern void mpi_host_mem_alloc(char *&host_buf, size_t size_to_alloc);
-extern void mpi_host_mem_free(char *&host_buf);
+extern void mpi_host_mem_free(char *host_buf);
 void host_mem_alloc(char *&host_buf, size_t size_to_alloc, host_alloc_t atype)
 {
     switch (atype) {
