@@ -55,6 +55,7 @@ BENCHMARK_SUITE_SRC += GPU/gpu.cpp
 BENCHMARK_SUITE_SRC += GPU/gpuconf.cpp
 BENCHMARK_SUITE_SRC += GPU/alloc.cu
 BENCHMARK_SUITE_SRC += GPU/mpialloc.cpp
+BENCHMARK_SUITE_SRC += GPU/hwloc_iface.cpp
 BENCHMARK_SUITE_SRC += GPU/device_routines.cu
 
 GPU/gpu.o: GPU/alloc.h GPU/cuda_helpers.h GPU/gpu_benchmark.h GPU/gpu_suite.h GPU/device_routines.h GPU/yaml_io.h
