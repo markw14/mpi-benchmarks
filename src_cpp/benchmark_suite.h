@@ -91,7 +91,7 @@ class BenchmarkSuite : public BenchmarkSuiteBase {
             return true;
         }
         virtual void finalize(const std::vector<std::string> &,
-                              std::ostream &output = std::cout) { UNUSED(output); }
+                              std::ostream &output = std::cout, int rank = 0) { UNUSED(output); UNUSED(rank); }
         static BenchmarkSuite<bs> *register_elem(const Benchmark *elem) { get_instance().do_register_elem(elem); return instance; }
         static void get_full_list(std::set<std::string> &all_benchmarks) {
             get_instance().do_get_full_list(all_benchmarks);

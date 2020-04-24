@@ -348,7 +348,7 @@ int main(int argc, char * *argv)
         }
 
         // 4. Final steps on suite-level
-        BenchmarkSuitesCollection::finalize(benchmarks_to_run, output);
+        BenchmarkSuitesCollection::finalize(benchmarks_to_run, output, rank);
         if (rank == 0) {
            cout << output.str();
            output.str("");

@@ -142,10 +142,10 @@ namespace async_suite {
     }
 
      template <> void BenchmarkSuite<BS_GENERIC>::finalize(const std::vector<std::string> &,
-                          std::ostream &) {
+                          std::ostream &, int rank) {
         yaml_out << YAML::EndMap;
         yaml_out << YAML::Newline;
-        if (!yaml_outfile.empty()) {
+        if (!yaml_outfile.empty() && !rank) {
             std::ofstream ofs(yaml_outfile, std::ios_base::out | std::ios_base::trunc);
             ofs << yaml_out.c_str();
         }

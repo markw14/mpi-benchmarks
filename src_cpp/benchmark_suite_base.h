@@ -69,8 +69,9 @@ struct BenchmarkSuiteBase {
         UNUSED(output);
         return true;
     }
-    virtual void finalize(const std::vector<std::string> &, std::ostream &output = std::cout) {
+    virtual void finalize(const std::vector<std::string> &, std::ostream &output = std::cout, int rank = 0) {
         UNUSED(output);
+        UNUSED(rank);
     }
     virtual void get_bench_list(std::set<std::string> &, BenchListFilter filter = ALL_BENCHMARKS) const { UNUSED(filter); }
     virtual void get_bench_list(std::vector<std::string> &, BenchListFilter filter = ALL_BENCHMARKS) const { UNUSED(filter); }

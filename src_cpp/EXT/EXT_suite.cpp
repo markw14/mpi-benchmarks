@@ -500,7 +500,8 @@ template <> bool BenchmarkSuite<BS_EXT>::prepare(const args_parser &parser, cons
 }
 
 template <> void BenchmarkSuite<BS_EXT>::finalize(const vector<string> &benchs,
-                                                  std::ostream &output) {
+                                                  std::ostream &output, 
+                                                  int rank = 0) {
     UNUSED(output);
     using namespace NS_EXT;
     if (!prepared)

@@ -139,10 +139,10 @@ class BenchmarkSuitesCollection {
         }
         return b;
     }
-    static void finalize(const std::vector<std::string> &benchs, std::ostream &output) {
+    static void finalize(const std::vector<std::string> &benchs, std::ostream &output, int rank = 0) {
         assert(pnames != NULL);
         for (std::map<const std::string, BenchmarkSuiteBase*>::iterator it = pnames->begin();
              it != pnames->end(); ++it) 
-                it->second->finalize(benchs, output);
+                it->second->finalize(benchs, output, rank);
     }    
 };
