@@ -87,12 +87,21 @@ namespace async_suite {
     
     void AsyncBenchmark::run(const scope_item &item) { 
         GET_PARAMETER(MPI_Datatype, datatype);
-        GET_PARAMETER(int, ncycles);
+        GET_PARAMETER(std::vector<int>, ncycles);
+        GET_PARAMETER(std::vector<int>, len);
         GET_PARAMETER(int, nwarmup);
+        assert(len.size() != 0);
+        assert(ncycles.size() != 0);
+        int item_ncycles = ncycles[0];
+        for (size_t i =0; i < len.size(); i++) {
+            if (item.len == (size_t)len[i]) {
+                item_ncycles = (i >= ncycles.size() ? ncycles.back() : ncycles[i]);
+            }
+        }
         double time, tover_comm, tover_calc;
-        bool done = benchmark(item.len, datatype, nwarmup, ncycles, time, tover_comm, tover_calc);
+        bool done = benchmark(item.len, datatype, nwarmup, item_ncycles, time, tover_comm, tover_calc);
         if (!done) {
-            results[item.len] = result { false, 0.0, 0.0, 0.0 };
+            results[item.len] = result { false, 0.0, 0.0, 0.0, item_ncycles };
         }
     }
 
@@ -153,6 +162,7 @@ namespace async_suite {
                     tavg /= nexec;
                     tover_calc /= nexec;
                     std::cout << get_name() << ": " << "{ " << "len: " << len << ", "
+                        << "ncycles: " << (it->second).ncycles << ", "
                         << " time: [ " << tmin << ", " 
                                       << tavg << ", " 
                                       << tmax << " ]" 
@@ -209,7 +219,7 @@ namespace async_suite {
             time = (t2 - t1) / ncycles;
         } 
         MPI_Barrier(MPI_COMM_WORLD);
-        results[count] = result { true, time, 0.0, 0.0 };
+        results[count] = result { true, time, 0.0, 0.0, ncycles };
         return true;
     }
 
@@ -278,7 +288,7 @@ namespace async_suite {
 //            total_tover_calc /= ncycles;
         } 
         MPI_Barrier(MPI_COMM_WORLD);
-        results[count] = result { true, time, time - ctime + tover_comm, tover_calc };
+        results[count] = result { true, time, time - ctime + tover_comm, tover_calc, ncycles };
 //        if (calc.wld == workload_t::CALC_AND_PROGRESS) {
 //            std::cout << ">> " << "progress stats: " << calc.total_tests << " " << calc.successful_tests << " " << total_tover << std::endl;
 //	}
@@ -326,7 +336,7 @@ namespace async_suite {
         }
         time /= ncycles;
         MPI_Barrier(MPI_COMM_WORLD);
-        results[count] = result { true, time, 0, 0 };
+        results[count] = result { true, time, 0, 0, ncycles };
         return true;
     }
 
@@ -371,7 +381,7 @@ namespace async_suite {
 	tover_comm = total_tover_comm / ncycles;
 	tover_calc = total_tover_calc / ncycles;
         MPI_Barrier(MPI_COMM_WORLD);
-        results[count] = result { true, time, time - ctime + tover_comm, tover_calc };
+        results[count] = result { true, time, time - ctime + tover_comm, tover_calc, ncycles };
 //        if (calc.wld == workload_t::CALC_AND_PROGRESS || calc.wld == workload_t::CALC) {
 //            std::cout << ">> " << "calc time: " << int(total_ctime * 1e6) << " " << int(total_tover * 1e6) << std::endl;
 //	}

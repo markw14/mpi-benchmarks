@@ -76,7 +76,7 @@ namespace async_suite {
                      set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING).
                      set_caption("INT,INT,...");
         parser.add<std::string>("datatype", "double").set_caption("double|float|int|char");
-        parser.add<int>("ncycles", 1000);
+        parser.add_vector<int>("ncycles", "1000");
         parser.add<int>("nwarmup", 0); //3);
         parser.add_vector<int>("calctime", "10,10,50,500,10000").
                      set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING).
@@ -92,7 +92,8 @@ namespace async_suite {
     MPI_Datatype datatype;
     YAML::Emitter yaml_out;
     std::string yaml_outfile;
-    int ncycles, nwarmup;
+    std::vector<int> ncycles;
+    int nwarmup;
     int cper10usec;
     enum workload_t {
         NONE, CALC, CALC_AND_PROGRESS, CALC_AND_MPICH_PROGRESS
@@ -133,7 +134,7 @@ namespace async_suite {
             output << get_name() << ": " << "Unknown data type in 'datatype' option. Use -help for help." << std::endl;
             return false;
         }
-        ncycles = parser.get<int>("ncycles");
+        parser.get<int>("ncycles", ncycles);
         nwarmup = parser.get<int>("nwarmup");
         yaml_outfile = parser.get<std::string>("output");
         yaml_out << YAML::BeginDoc;
@@ -165,7 +166,7 @@ namespace async_suite {
         HANDLE_PARAMETER(std::vector<int>, calctime);
         HANDLE_PARAMETER(MPI_Datatype, datatype);
         HANDLE_PARAMETER(YAML::Emitter, yaml_out);
-        HANDLE_PARAMETER(int, ncycles);
+        HANDLE_PARAMETER(std::vector<int>, ncycles);
         HANDLE_PARAMETER(int, nwarmup);
         HANDLE_PARAMETER(int, cper10usec);
         HANDLE_PARAMETER(workload_t, workload);

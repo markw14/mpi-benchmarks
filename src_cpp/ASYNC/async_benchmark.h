@@ -59,7 +59,8 @@ namespace async_suite {
             bool done;
             double time;
             double overhead_comm;
-	    double overhead_calc;
+	        double overhead_calc;
+            int ncycles;
         };
         std::map<int, result> results;
         char *sbuf, *rbuf;
