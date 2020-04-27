@@ -129,6 +129,22 @@ namespace async_suite {
                                        &graph_comm);
     }
    
+    void AsyncBenchmark_rma_pt2pt::init() {
+        AsyncBenchmark::init();
+        MPI_Comm_group(MPI_COMM_WORLD, &comm_group);
+        MPI_Info_create(&info);
+        MPI_Info_set(info, "no_locks", "true");
+        MPI_Win_create(sbuf, allocated_size, dtsize, info,
+                       MPI_COMM_WORLD, &win);
+    }
+
+    void AsyncBenchmark_rma_ipt2pt::init() {
+        AsyncBenchmark::init();
+        calc.init();
+        MPI_Win_create(sbuf, allocated_size, dtsize, MPI_INFO_NULL,
+                       MPI_COMM_WORLD, &win);
+    }
+
     void AsyncBenchmark::run(const scope_item &item) { 
         GET_PARAMETER(MPI_Datatype, datatype);
         GET_PARAMETER(std::vector<int>, ncycles);
@@ -484,6 +500,82 @@ namespace async_suite {
         return true;
     }
 
+    bool AsyncBenchmark_rma_pt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
+        tover_comm = 0;
+        tover_calc = 0;
+        int stride = 0, group;
+        if (!set_stride(rank, np, stride, group)) {
+            MPI_Barrier(MPI_COMM_WORLD);
+            return false;
+        }
+        size_t b = (size_t)count * (size_t)dtsize;
+        size_t n = allocated_size / b;
+        double t1 = 0, t2 = 0;
+        int pair = -1;
+        if (group % 2 == 0) {
+            pair = rank + stride;
+        } else {
+            pair = rank - stride;
+        }
+        MPI_Group_incl(comm_group, 1, &pair, &wgroup);
+        for(int i = 0; i < ncycles + nwarmup; i++) {
+            if (i == nwarmup) t1 = MPI_Wtime();
+            // TODO MPI_MODE_NOSTORE | MPI_MODE_NOPUT
+            MPI_Win_post(wgroup, 0, win);
+            MPI_Win_start(wgroup, 0, win);
+            MPI_Get((char*)rbuf + (i%n)*b, count, datatype, pair, (i%n)*b/dtsize, count, datatype, win);
+            MPI_Win_complete(win);
+            MPI_Win_wait(win);
+        }
+        t2 = MPI_Wtime();
+        time = (t2 - t1) / ncycles;
+        MPI_Barrier(MPI_COMM_WORLD);
+        results[count] = result { true, time, 0.0, 0.0, ncycles };
+        return true;
+    }
+
+    bool AsyncBenchmark_rma_ipt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
+        int stride = 0, group;
+        if (!set_stride(rank, np, stride, group)) {
+            MPI_Barrier(MPI_COMM_WORLD);
+            return false;
+        }
+        size_t b = (size_t)count * (size_t)dtsize;
+        size_t n = allocated_size / b;
+        double t1 = 0, t2 = 0, ctime = 0, total_ctime = 0, total_tover_comm = 0, total_tover_calc = 0,
+                                          local_ctime = 0, local_tover_comm = 0, local_tover_calc = 0;
+        int pair = -1;
+        calc.reqs = nullptr;
+        calc.num_requests = 0;
+        if (group % 2 == 0) {
+            pair = rank + stride;
+        } else {
+            pair = rank - stride;
+        }
+        for (int i = 0; i < ncycles + nwarmup; i++) {
+            if (i == nwarmup) t1 = MPI_Wtime();
+            MPI_Win_lock(MPI_LOCK_SHARED, pair, 0, win);
+            MPI_Get((char*)rbuf + (i%n)*b, count, datatype, pair, (i%n)*b/dtsize, count, datatype, win);
+            MPI_Win_flush(pair, win);
+            calc.benchmark(count, datatype, 0, 1, local_ctime, local_tover_comm, local_tover_calc);
+            if (i >= nwarmup) {
+                total_ctime += local_ctime;
+                total_tover_comm += local_tover_comm;
+                total_tover_calc += local_tover_calc;
+            }
+            MPI_Win_unlock(pair, win);
+        }
+        t2 = MPI_Wtime();
+        time = (t2 - t1) / ncycles;
+        ctime = total_ctime / ncycles;
+        tover_comm = total_tover_comm / ncycles;
+        tover_calc = total_tover_calc / ncycles;
+        MPI_Barrier(MPI_COMM_WORLD);
+        results[count] = result { true, time, time - ctime + tover_comm, tover_calc, ncycles };
+        return true;
+    }
+
+
     void AsyncBenchmark_calc::init() {
         AsyncBenchmark::init();
 
@@ -712,5 +804,7 @@ namespace async_suite {
     DECLARE_INHERITED(AsyncBenchmark_iallreduce, async_allreduce)
     DECLARE_INHERITED(AsyncBenchmark_na2a, sync_na2a)
     DECLARE_INHERITED(AsyncBenchmark_ina2a, async_na2a)
+    DECLARE_INHERITED(AsyncBenchmark_rma_pt2pt, sync_rma_pt2pt)
+    DECLARE_INHERITED(AsyncBenchmark_rma_ipt2pt, async_rma_pt2pt)
     DECLARE_INHERITED(AsyncBenchmark_calc, async_calc)
 }

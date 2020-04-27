@@ -143,5 +143,24 @@ namespace async_suite {
         virtual size_t buf_size_multiplier() override { return 2; }
         DEFINE_INHERITED(AsyncBenchmark_ina2a, BenchmarkSuite<BS_GENERIC>);
     };
-    
+ 
+    class AsyncBenchmark_rma_pt2pt : public AsyncBenchmark {
+        public:
+        MPI_Info info;
+        MPI_Group comm_group, wgroup;
+        MPI_Win win;    
+        virtual void init() override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) override;
+        DEFINE_INHERITED(AsyncBenchmark_rma_pt2pt, BenchmarkSuite<BS_GENERIC>);
+
+    };
+
+    class AsyncBenchmark_rma_ipt2pt : public AsyncBenchmark {
+        public:
+        AsyncBenchmark_calc calc;
+        MPI_Win win;    
+        virtual void init() override;
+        virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) override;
+        DEFINE_INHERITED(AsyncBenchmark_rma_ipt2pt, BenchmarkSuite<BS_GENERIC>);
+    };
 }
