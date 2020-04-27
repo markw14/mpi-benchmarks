@@ -592,102 +592,72 @@ namespace async_suite {
                 a[i][j] = 1.;
             }
         }
-        double timings[3];
-        int warmup = 50;
-        int Nrep = (50000000 / (2 * SIZE*SIZE)) + 1;
-        for (int k = 0; k < 3+warmup; k++) {
-            double t1 = MPI_Wtime();
-            double tover = 0;
-            for (int repeat = 0, cnt=999999; repeat < Nrep; repeat++) {
-                if (--cnt == 0) { 
-                    double ot1 = MPI_Wtime();
-                    if (reqs && num_requests) {
-                        for (int r = 0; r < num_requests; r++) {
-                            if (!stat[r]) {
-                                total_tests++;
-                                MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
-                                if (stat[r]) {
-                                    successful_tests++;
+#if 1
+        if (getenv("IMB_ASYNC_CPER10USEC")) {        
+            double timings[3];
+            int warmup = 50;
+            int Nrep = (50000000 / (2 * SIZE*SIZE)) + 1;
+            for (int k = 0; k < 3+warmup; k++) {
+                double t1 = MPI_Wtime();
+                double tover = 0;
+                for (int repeat = 0, cnt=999999; repeat < Nrep; repeat++) {
+                    if (--cnt == 0) { 
+                        double ot1 = MPI_Wtime();
+                        if (reqs && num_requests) {
+                            for (int r = 0; r < num_requests; r++) {
+                                if (!stat[r]) {
+                                    total_tests++;
+                                    MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
+                                    if (stat[r]) {
+                                        successful_tests++;
+                                    }
                                 }
                             }
                         }
-                    }
-                    double ot2 = MPI_Wtime();
-                    tover += (ot2-ot1);
-                } 
-                for (int i = 0; i < SIZE; i++) {
-                    for (int j = 0; j < SIZE; j++) {
-                        for (int k = 0; k < SIZE; k++) {
-                            c[i][j] += a[i][k] * b[k][j] + repeat*repeat;
+                        double ot2 = MPI_Wtime();
+                        tover += (ot2-ot1);
+                    } 
+                    for (int i = 0; i < SIZE; i++) {
+                        for (int j = 0; j < SIZE; j++) {
+                            for (int k = 0; k < SIZE; k++) {
+                                c[i][j] += a[i][k] * b[k][j] + repeat*repeat;
+                            }
                         }
                     }
-                }
 
+                }
+                double t2 = MPI_Wtime();
+                if (k >= warmup)
+                    timings[k-warmup] = t2 - t1;
             }
-            double t2 = MPI_Wtime();
-            if (k >= warmup)
-                timings[k-warmup] = t2 - t1;
+            double tmedian = std::min(timings[0], timings[1]);
+            if (tmedian < timings[2])
+                tmedian = std::min(std::max(timings[0], timings[1]), timings[2]);
+            Nrep = (int)((double)Nrep / (tmedian * 1.0e5) + 0.99);
+            int ncalcs_min = 0, ncalcs_max = 0;
+            MPI_Allreduce(&Nrep, &ncalcs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce(&Nrep, &ncalcs_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+            MPI_Allreduce(&Nrep, &ncalcs_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+            ncalcs /= np;
+            
+            char node[80];
+            gethostname(node, 80-1);
+            std::cout << ">> cper10usec: node: " << node << " " << Nrep << std::endl;
+            if (rank == 0)
+                std::cout << ">> cper10usec=" << ncalcs << " min/max=" << ncalcs_min << "/" << ncalcs_max << std::endl;
         }
-        double tmedian = std::min(timings[0], timings[1]);
-        if (tmedian < timings[2])
-            tmedian = std::min(std::max(timings[0], timings[1]), timings[2]);
-        Nrep = (int)((double)Nrep / (tmedian * 1.0e5) + 0.99);
-        int ncalcs_min = 0, ncalcs_max = 0;
-        MPI_Allreduce(&Nrep, &ncalcs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Allreduce(&Nrep, &ncalcs_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-        MPI_Allreduce(&Nrep, &ncalcs_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-        ncalcs /= np;
-//	char node[80];
-//	gethostname(node, 80-1);
-//	std::cout << ">> node: " << node << " " << Nrep << std::endl;
-//        if (rank == 0)
-//            std::cout << ">> cper10usec=" << ncalcs << " min/max=" << ncalcs_min << "/" << ncalcs_max << std::endl;
-/*
-	    double tover = 0;
-	    double t1 = MPI_Wtime();
-            for (int repeat = 0, cnt=70000; repeat < Nrep * 10; repeat++) {
-//		if (--cnt == 0) { if (repeat % 70 == 3) cnt++; }
-
-		if (--cnt == 0) {
-		    double ot1 = MPI_Wtime();
-		    if (reqs && num_requests) {
-			for (int r = 0; r < num_requests; r++) {
-			    if (!stat[r]) {
-				total_tests++;
-				MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
-				if (stat[r]) {
-				    successful_tests++;
-				}
-			    }
-			}
-		    }
-	            double ot2 = MPI_Wtime();
-		    tover += (ot2-ot1);
-
-		} 
-                for (int i = 0; i < SIZE; i++) {
-                    for (int j = 0; j < SIZE; j++) {
-                        for (int k = 0; k < SIZE; k++) {
-                            c[i][j] += a[i][k] * b[k][j] + repeat*repeat;
-			}
-                    }
-                }
-	    }
-            double t2 = MPI_Wtime();
-	    if (rank == 0)
-		std::cout << ">> TIME=" << int((t2-t1)*1e6) << std::endl;
-*/
+#endif
     }
 
     bool AsyncBenchmark_calc::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
-	GET_PARAMETER(int, cper10usec);
-	int real_cper10usec;
+        GET_PARAMETER(int, cper10usec);
+        int real_cper10usec;
         (void)datatype;
         total_tests = 0;
         successful_tests = 0;
-	time = 0;
+        time = 0;
         tover_comm = 0;
-	tover_calc = 0;
+        tover_calc = 0;
         if (wld == workload_t::NONE) {
             time = 0;
             return true;
@@ -695,106 +665,101 @@ namespace async_suite {
         //do_probe = true;
         double t1 = 0, t2 = 0;
         double ot1 = 0, ot2 = 0;
-        int R = calctime_by_len[count] * ncalcs / 10;
+        int R = calctime_by_len[count] * cper10usec / 10;
         if (wld == workload_t::CALC_AND_PROGRESS && reqs) {
             for (int r = 0; r < num_requests; r++) {
                 stat[r] = 0;
             }
         }
-	if (wld == workload_t::CALC_AND_PROGRESS) {
-		for (int i = 0; i < ncycles + nwarmup; i++) {
-		    if (i == nwarmup) t1 = MPI_Wtime();
-		    for (int repeat = 0, cnt = 90; repeat < R; repeat++) {
-#if 1                
-			if (--cnt == 0) {
-#if 1 
-			    ot1 = MPI_Wtime();
-			    if (reqs && num_requests) {
-				for (int r = 0; r < num_requests; r++) {
-				    if (!stat[r]) {
-					total_tests++;
-					MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
-					if (stat[r]) {
-					    successful_tests++;
-					}
-				    }
-				}
-			    }
-			    /*
-			    int avail;
-			    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &avail, MPI_STATUS_IGNORE);
-			    if (avail) {
-				std::cout << ">> OK: Iprobe" << std::endl;
-				do_probe = false;
-			    }
-			    */
-			    ot2 = MPI_Wtime();
-			    tover_comm += (ot2 - ot1);
-#endif
-			    cnt = 90;
-			}
-#endif                
-			for (int i = 0; i < SIZE; i++) {
-			    for (int j = 0; j < SIZE; j++) {
-				for (int k = 0; k < SIZE; k++) {
-				    c[i][j] += a[i][k] * b[k][j] + repeat * repeat;
-				}
-			    }
-			}
-
-		    }
-		}
-	} else {
-	    for (int i = 0; i < ncycles + nwarmup; i++) {
+        if (wld == workload_t::CALC_AND_PROGRESS) {
+            for (int i = 0; i < ncycles + nwarmup; i++) {
                 if (i == nwarmup) t1 = MPI_Wtime();
-                for (int repeat = 0, cnt = 700000; repeat < R; repeat++) {
-
-		   // if (--cnt == 0) { if (repeat%70 == 3) cnt++; }
- 		    if (--cnt == 0) {
-		    double ot1 = MPI_Wtime();
-		    if (reqs && num_requests) {
-			for (int r = 0; r < num_requests; r++) {
-			    if (!stat[r]) {
-				total_tests++;
-				MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
-				if (stat[r]) {
-				    successful_tests++;
-				}
-			    }
-			}
-		    }
-	            double ot2 = MPI_Wtime();
-		    tover_comm += (ot2-ot1);
-
-		} 
+                for (int repeat = 0, cnt = 90; repeat < R; repeat++) {
+#if 1                
+                    if (--cnt == 0) {
+#if 1 
+                        ot1 = MPI_Wtime();
+                        if (reqs && num_requests) {
+                            for (int r = 0; r < num_requests; r++) {
+                                if (!stat[r]) {
+                                    total_tests++;
+                                    MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
+                                    if (stat[r]) {
+                                        successful_tests++;
+                                    }
+                                }
+                            }
+                        }
+                        /*
+                           int avail;
+                           MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &avail, MPI_STATUS_IGNORE);
+                           if (avail) {
+                           std::cout << ">> OK: Iprobe" << std::endl;
+                           do_probe = false;
+                           }
+                           */
+                        ot2 = MPI_Wtime();
+                        tover_comm += (ot2 - ot1);
+#endif
+                        cnt = 90;
+                    }
+#endif                
                     for (int i = 0; i < SIZE; i++) {
                         for (int j = 0; j < SIZE; j++) {
                             for (int k = 0; k < SIZE; k++) {
                                 c[i][j] += a[i][k] * b[k][j] + repeat * repeat;
-		    	    }
+                            }
+                        }
+                    }
+
+                }
+            }
+        } else {
+            for (int i = 0; i < ncycles + nwarmup; i++) {
+                if (i == nwarmup) t1 = MPI_Wtime();
+                for (int repeat = 0, cnt = 700000; repeat < R; repeat++) {
+
+                    // if (--cnt == 0) { if (repeat%70 == 3) cnt++; }
+                    if (--cnt == 0) {
+                        double ot1 = MPI_Wtime();
+                        if (reqs && num_requests) {
+                            for (int r = 0; r < num_requests; r++) {
+                                if (!stat[r]) {
+                                    total_tests++;
+                                    MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
+                                    if (stat[r]) {
+                                        successful_tests++;
+                                    }
+                                }
+                            }
+                        }
+                        double ot2 = MPI_Wtime();
+                        tover_comm += (ot2-ot1);
+
+                    } 
+                    for (int i = 0; i < SIZE; i++) {
+                        for (int j = 0; j < SIZE; j++) {
+                            for (int k = 0; k < SIZE; k++) {
+                                c[i][j] += a[i][k] * b[k][j] + repeat * repeat;
+                            }
                         }
                     }
                 }
-	    }
-	}
+            }
+        }
         t2 = MPI_Wtime();
         time = (t2 - t1);
-	
-	int pure_calc_time = int((time - tover_comm) * 1e6);
-	if (!pure_calc_time)
-	    return true;
-	real_cper10usec = R * 10 / pure_calc_time;
-//	if (rank == 0) {
-	    if (cper10usec) {
-		int R0 = pure_calc_time * cper10usec / 10;
-		tover_calc = (double)(R0 - R) / (double)real_cper10usec * 1e-5;
-//tover_calc = (time - tover_comm) - (((double)R / (double)cper10usec) * 1e-5);
-//  	        std::cout << ">> real_cper10usec=" << real_cper10usec << " cper10usec=" << cper10usec << " tover_calc=" << int(tover_calc * 1e6) << "/" << pure_calc_time << std::endl;
-	    } else {
-		tover_calc = 0;
-//                std::cout << ">> real_cper10usec=" << real_cper10usec << std::endl;
-	    }
-//	} 
+
+        int pure_calc_time = int((time - tover_comm) * 1e6);
+        if (!pure_calc_time)
+            return true;
+        real_cper10usec = R * 10 / pure_calc_time;
+        if (cper10usec) {
+            int R0 = pure_calc_time * cper10usec / 10;
+            tover_calc = (double)(R0 - R) / (double)real_cper10usec * 1e-5;
+        } else {
+            tover_calc = 0;
+        }
         return true;
     }
 
