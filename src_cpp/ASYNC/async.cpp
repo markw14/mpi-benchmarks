@@ -459,9 +459,11 @@ namespace async_suite {
 	    MPI_Status  status;
         for (int i = 0; i < ncycles + nwarmup; i++) {
             if (i >= nwarmup) t1 = MPI_Wtime();
-            MPI_Iallreduce((char *)sbuf + (i%n)*b, (char *)rbuf + (i%n)*b, count, datatype, MPI_SUM, MPI_COMM_WORLD, request);
+            //!!!
+            //MPI_Iallreduce((char *)sbuf + (i%n)*b, (char *)rbuf + (i%n)*b, count, datatype, MPI_SUM, MPI_COMM_WORLD, request);
             calc.benchmark(count, datatype, 0, 1, local_ctime, local_tover_comm, local_tover_calc);
-            MPI_Wait(request, &status);
+            //!!!
+            //MPI_Wait(request, &status);
             if (i >= nwarmup) {
                 t2 = MPI_Wtime();
                 time += (t2 - t1);
@@ -469,11 +471,14 @@ namespace async_suite {
                 total_tover_comm += local_tover_comm;
                 total_tover_calc += local_tover_calc;
             }
+            //!!!
+            /*
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
+            */
         }
         time /= ncycles;
         ctime = total_ctime / ncycles;
@@ -804,15 +809,20 @@ namespace async_suite {
         t2 = MPI_Wtime();
         time = (t2 - t1);
 
+        tover_calc = 0;
         int pure_calc_time = int((time - tover_comm) * 1e6);
         if (!pure_calc_time)
             return true;
         real_cper10usec = R * 10 / pure_calc_time;
+        std::cout << ">> time=" << time << " " << "tover_comm=" << tover_comm << std::endl;
+        std::cout << ">> pure_calc_time=" << pure_calc_time << " " << "real_cper10usec=" << real_cper10usec << std::endl;
+        std::cout << ">> cper10usec=" << cper10usec << std::endl;
         if (cper10usec) {
             int R0 = pure_calc_time * cper10usec / 10;
             tover_calc = (double)(R0 - R) / (double)real_cper10usec * 1e-5;
-        } else {
-            tover_calc = 0;
+            std::cout << ">> R0=" << R0 << " " << "R=" << R << std::endl;
+            if (tover_calc < 1e6)
+                tover_calc = 0;
         }
         return true;
     }
