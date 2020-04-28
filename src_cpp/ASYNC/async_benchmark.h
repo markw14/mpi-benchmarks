@@ -65,6 +65,8 @@ namespace async_suite {
         std::map<int, result> results;
         char *sbuf, *rbuf;
         int np, rank;
+        int stride = 0, group = -1;
+        bool is_rank_active = true;
         size_t allocated_size;
         int dtsize;
         public:

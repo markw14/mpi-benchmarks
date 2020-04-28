@@ -53,6 +53,51 @@ goods and services.
 //!!!
 #include <unistd.h>
 
+#if 1
+namespace sys {
+// NOTE: seems to be Linux-specific
+static inline size_t getnumcores() {
+    return sysconf(_SC_NPROCESSORS_ONLN);
+}
+
+static inline bool threadaffinityisset(int &nthreads) {
+    cpu_set_t mask;
+    if (sched_getaffinity(0, sizeof(cpu_set_t), &mask) == -1) {
+        perror("sched_getaffinity");
+        assert(false && "sched_getaffinity failure");
+    }
+    int NC = sys::getnumcores();
+    int nset = 0;
+    for (int i = 0; i < NC; i++) {
+        nset += (CPU_ISSET(i, &mask) ? 1 : 0);
+    }
+    nthreads = nset;
+    // We assume OK: exact one-to-one affinity or hyperthreading/SMT affinity
+    // for 2, 3 or 4 threads
+    return nthreads > 0 && nthreads < 5 && nthreads != NC;
+}
+
+static inline int getthreadaffinity() {
+    cpu_set_t mask;
+    if (sched_getaffinity(0, sizeof(cpu_set_t), &mask) == -1) {
+        perror("sched_getaffinity");
+        assert(false && "sched_getaffinity failure");
+    }
+    int core = -1;
+    for (size_t i = 0; i < sizeof(mask) * 8; i++) {
+        if (CPU_ISSET(i, &mask)) {
+            core = (int)i;
+            break;
+        }
+    }
+    assert (core != -1);
+    assert(core < (int)sys::getnumcores());
+    return core;
+}
+}
+#endif
+
+
 namespace async_suite {
 
     inline bool set_stride(int rank, int size, int &stride, int &group)
@@ -83,6 +128,10 @@ namespace async_suite {
         allocated_size = size_to_alloc;
         MPI_Comm_size(MPI_COMM_WORLD, &np);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+		int nthreads = 0;
+		std::cout << ">> rank=" << rank << ": " << "thread affinity: " << (int)sys::threadaffinityisset(nthreads) << std::endl;
+        std::cout << ">> rank=" << rank << ": " << "nthreads:  " << nthreads << std::endl;
+        is_rank_active = set_stride(rank, np, stride, group);
     }
 
     struct topohelper {
@@ -107,8 +156,8 @@ namespace async_suite {
     void AsyncBenchmark_na2a::init() {
         AsyncBenchmark::init();
         topohelper topo(np, rank);
-        std::vector<int> sources { topo.prev(1), topo.next(1) };
-        std::vector<int> dests { topo.prev(1), topo.next(1) };
+        std::vector<int> sources { topo.prev(stride), topo.next(stride) };
+        std::vector<int> dests { topo.prev(stride), topo.next(stride) };
         MPI_Dist_graph_create_adjacent(MPI_COMM_WORLD,
                                        sources.size(), sources.data(), (const int *)MPI_UNWEIGHTED,
                                        dests.size(), dests.data(), (const int *)MPI_UNWEIGHTED,
@@ -120,8 +169,8 @@ namespace async_suite {
         AsyncBenchmark::init();
         calc.init();
         topohelper topo(np, rank);
-        std::vector<int> sources { topo.prev(1), topo.next(1) };
-        std::vector<int> dests { topo.prev(1), topo.next(1) };
+        std::vector<int> sources { topo.prev(stride), topo.next(stride) };
+        std::vector<int> dests { topo.prev(stride), topo.next(stride) };
         MPI_Dist_graph_create_adjacent(MPI_COMM_WORLD,
                                        sources.size(), sources.data(), (const int *)MPI_UNWEIGHTED,
                                        dests.size(), dests.data(), (const int *)MPI_UNWEIGHTED,
@@ -238,6 +287,7 @@ namespace async_suite {
             }
         }
         yaml_topo.add("np", np);
+        yaml_topo.add("stride", stride);
         WriteOutYaml(yaml_out, get_name(), {yaml_tavg, yaml_over_full, yaml_topo});
     }
     AsyncBenchmark::~AsyncBenchmark() {
@@ -249,8 +299,7 @@ namespace async_suite {
     bool AsyncBenchmark_pt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
         tover_comm = 0;
 	    tover_calc = 0;
-        int stride = 0, group;
-        if (!set_stride(rank, np, stride, group)) {
+        if (!is_rank_active) {
             MPI_Barrier(MPI_COMM_WORLD);
             return false;
         }
@@ -289,8 +338,7 @@ namespace async_suite {
     }
 
     bool AsyncBenchmark_ipt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
-        int stride = 0, group;
-        if (!set_stride(rank, np, stride, group)) {
+        if (!is_rank_active) {
             MPI_Barrier(MPI_COMM_WORLD);
             return false;
         }
@@ -438,6 +486,10 @@ namespace async_suite {
 
     bool AsyncBenchmark_na2a::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {          tover_comm = 0;
 	    tover_calc = 0;
+        if (!is_rank_active) {
+            MPI_Barrier(MPI_COMM_WORLD);
+            return false;
+        }
         size_t b = (size_t)count * (size_t)dtsize * buf_size_multiplier();
         size_t n = allocated_size / b;
         double t1 = 0, t2 = 0;
@@ -467,6 +519,10 @@ namespace async_suite {
         double t1 = 0, t2 = 0, ctime = 0, total_ctime = 0, total_tover_comm = 0, total_tover_calc = 0,
                                           local_ctime = 0, local_tover_comm = 0, local_tover_calc = 0;
 	    time = 0;
+        if (!is_rank_active) {
+            MPI_Barrier(MPI_COMM_WORLD);
+            return false;
+        }
         MPI_Request request[1];
         calc.reqs = request;
         calc.num_requests = 1;
@@ -503,8 +559,7 @@ namespace async_suite {
     bool AsyncBenchmark_rma_pt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
         tover_comm = 0;
         tover_calc = 0;
-        int stride = 0, group;
-        if (!set_stride(rank, np, stride, group)) {
+        if (!is_rank_active) {
             MPI_Barrier(MPI_COMM_WORLD);
             return false;
         }
@@ -535,8 +590,7 @@ namespace async_suite {
     }
 
     bool AsyncBenchmark_rma_ipt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
-        int stride = 0, group;
-        if (!set_stride(rank, np, stride, group)) {
+        if (!is_rank_active) {
             MPI_Barrier(MPI_COMM_WORLD);
             return false;
         }
