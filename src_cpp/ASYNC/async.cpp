@@ -215,7 +215,7 @@ namespace async_suite {
     }
 
     struct YamlOutputMaker {
-        const std::string &block;
+        std::string block;
         YamlOutputMaker(const std::string &_block) : block(_block) {}
         std::map<const std::string, double> kv;
         void add(const std::string &key, double value) { kv[key] = value; }
@@ -418,6 +418,7 @@ namespace async_suite {
     }
 
     bool AsyncBenchmark_allreduce::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
+        time = 0;
         tover_comm = 0;
 	    tover_calc = 0;
         size_t b = (size_t)count * (size_t)dtsize;
@@ -484,7 +485,9 @@ namespace async_suite {
         return true;
     }
 
-    bool AsyncBenchmark_na2a::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {          tover_comm = 0;
+    bool AsyncBenchmark_na2a::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {          
+        time = 0;
+        tover_comm = 0;
 	    tover_calc = 0;
         if (!is_rank_active) {
             MPI_Barrier(MPI_COMM_WORLD);
@@ -514,7 +517,8 @@ namespace async_suite {
         return true;
     }
 
-    bool AsyncBenchmark_ina2a::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {         size_t b = (size_t)count * (size_t)dtsize * buf_size_multiplier();
+    bool AsyncBenchmark_ina2a::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {         
+        size_t b = (size_t)count * (size_t)dtsize * buf_size_multiplier();
         size_t n = allocated_size / b;
         double t1 = 0, t2 = 0, ctime = 0, total_ctime = 0, total_tover_comm = 0, total_tover_calc = 0,
                                           local_ctime = 0, local_tover_comm = 0, local_tover_calc = 0;
@@ -647,9 +651,9 @@ namespace async_suite {
             }
         }
 #if 1
-        if (getenv("IMB_ASYNC_CPER10USEC")) {        
+//        if (getenv("IMB_ASYNC_CPER10USEC")) {        
             double timings[3];
-            int warmup = 50;
+            int warmup = 6;
             int Nrep = (50000000 / (2 * SIZE*SIZE)) + 1;
             for (int k = 0; k < 3+warmup; k++) {
                 double t1 = MPI_Wtime();
@@ -699,7 +703,7 @@ namespace async_suite {
             std::cout << ">> cper10usec: node: " << node << " " << Nrep << std::endl;
             if (rank == 0)
                 std::cout << ">> cper10usec=" << ncalcs << " min/max=" << ncalcs_min << "/" << ncalcs_max << std::endl;
-        }
+//        }
 #endif
     }
 
@@ -719,6 +723,8 @@ namespace async_suite {
         //do_probe = true;
         double t1 = 0, t2 = 0;
         double ot1 = 0, ot2 = 0;
+        if (cper10usec == 0)
+            cper10usec = ncalcs;
         int R = calctime_by_len[count] * cper10usec / 10;
         if (wld == workload_t::CALC_AND_PROGRESS && reqs) {
             for (int r = 0; r < num_requests; r++) {
