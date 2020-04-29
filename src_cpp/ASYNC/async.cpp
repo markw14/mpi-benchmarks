@@ -242,14 +242,14 @@ namespace async_suite {
 
     static inline double get_avg(double x, int nexec, bool is_done) {
         double xx = x, xsum = 0, xmin = 0, xmax = 0; 
-        if (nexec == 0)
-            return 0;
         if (!is_done) xx = 0;
         MPI_Reduce(&xx, &xsum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if (!is_done) xx = 0;
         MPI_Reduce(&xx, &xmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
         if (!is_done) xx = 1e32;
         MPI_Reduce(&xx, &xmin, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+        if (nexec == 0)
+            return 0;
         if (nexec > 4) {
             return (xsum - xmin - xmax) / (nexec - 2);
         } else {
@@ -669,60 +669,64 @@ namespace async_suite {
             }
         }
 #if 1
-//        if (getenv("IMB_ASYNC_CPER10USEC")) {        
-            double timings[3];
-            int warmup = 12;
-            int Nrep = (50000000 / (2 * SIZE*SIZE)) + 1;
-            for (int k = 0; k < 3+warmup; k++) {
-                double t1 = MPI_Wtime();
-                double tover = 0;
-                for (int repeat = 0, cnt=999999; repeat < Nrep; repeat++) {
-                    if (--cnt == 0) { 
-                        double ot1 = MPI_Wtime();
-                        if (reqs && num_requests) {
-                            for (int r = 0; r < num_requests; r++) {
-                                if (!stat[r]) {
-                                    total_tests++;
-                                    MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
-                                    if (stat[r]) {
-                                        successful_tests++;
-                                    }
+        double timings[3];
+        int warmup = 12;
+        char *estcycles = nullptr;
+        if ((estcycles = getenv("IMB_ASYNC_ESTIMATION_CYCLES"))) {
+            warmup = std::stoi(estcycles);
+        }       
+        int Nrep = (50000000 / (2 * SIZE*SIZE)) + 1;
+        for (int k = 0; k < 3+warmup; k++) {
+            double t1 = MPI_Wtime();
+            double tover = 0;
+            for (int repeat = 0, cnt=999999; repeat < Nrep; repeat++) {
+                if (--cnt == 0) { 
+                    double ot1 = MPI_Wtime();
+                    if (reqs && num_requests) {
+                        for (int r = 0; r < num_requests; r++) {
+                            if (!stat[r]) {
+                                total_tests++;
+                                MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
+                                if (stat[r]) {
+                                    successful_tests++;
                                 }
                             }
                         }
-                        double ot2 = MPI_Wtime();
-                        tover += (ot2-ot1);
-                    } 
-                    for (int i = 0; i < SIZE; i++) {
-                        for (int j = 0; j < SIZE; j++) {
-                            for (int k = 0; k < SIZE; k++) {
-                                c[i][j] += a[i][k] * b[k][j] + repeat*repeat;
-                            }
+                    }
+                    double ot2 = MPI_Wtime();
+                    tover += (ot2-ot1);
+                } 
+                for (int i = 0; i < SIZE; i++) {
+                    for (int j = 0; j < SIZE; j++) {
+                        for (int k = 0; k < SIZE; k++) {
+                            c[i][j] += a[i][k] * b[k][j] + repeat*repeat;
                         }
                     }
-
                 }
-                double t2 = MPI_Wtime();
-                if (k >= warmup)
-                    timings[k-warmup] = t2 - t1;
+
             }
-            double tmedian = std::min(timings[0], timings[1]);
-            if (tmedian < timings[2])
-                tmedian = std::min(std::max(timings[0], timings[1]), timings[2]);
-            Nrep = (int)((double)Nrep / (tmedian * 1.0e5) + 0.99);
-            int ncalcs_min = 0, ncalcs_max = 0;
-            MPI_Allreduce(&Nrep, &ncalcs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-            MPI_Allreduce(&Nrep, &ncalcs_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-            MPI_Allreduce(&Nrep, &ncalcs_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-            ncalcs /= np;
-#if 0 
+            double t2 = MPI_Wtime();
+            if (k >= warmup)
+                timings[k-warmup] = t2 - t1;
+        }
+        double tmedian = std::min(timings[0], timings[1]);
+        if (tmedian < timings[2])
+            tmedian = std::min(std::max(timings[0], timings[1]), timings[2]);
+        Nrep = (int)((double)Nrep / (tmedian * 1.0e5) + 0.99);
+        int ncalcs_min = 0, ncalcs_max = 0;
+        MPI_Allreduce(&Nrep, &ncalcs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&Nrep, &ncalcs_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+        MPI_Allreduce(&Nrep, &ncalcs_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        ncalcs /= np;
+#if 1
+        if (estcycles) {
             char node[80];
             gethostname(node, 80-1);
             std::cout << ">> cper10usec: node: " << node << " " << Nrep << std::endl;
             if (rank == 0)
                 std::cout << ">> cper10usec=" << ncalcs << " min/max=" << ncalcs_min << "/" << ncalcs_max << std::endl;
+        }
 #endif            
-//        }
 #endif
     }
 
