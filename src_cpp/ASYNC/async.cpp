@@ -240,6 +240,23 @@ namespace async_suite {
         yaml_out << YAML::Flow << YAML::EndMap;
     }
 
+    static inline double get_avg(double x, int nexec, bool is_done) {
+        double xx = x, xsum = 0, xmin = 0, xmax = 0; 
+        if (nexec == 0)
+            return 0;
+        if (!is_done) xx = 0;
+        MPI_Reduce(&xx, &xsum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (!is_done) xx = 0;
+        MPI_Reduce(&xx, &xmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        if (!is_done) xx = 1e32;
+        MPI_Reduce(&xx, &xmin, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+        if (nexec > 4) {
+            return (xsum - xmin - xmax) / (nexec - 2);
+        } else {
+            return xsum / nexec;
+        }
+    }
+
     void AsyncBenchmark::finalize() { 
         GET_PARAMETER(YAML::Emitter, yaml_out);
         YamlOutputMaker yaml_tmin("tmin");
@@ -260,16 +277,17 @@ namespace async_suite {
             if (!(it->second).done) time = 0.0;
             MPI_Reduce(&time, &tmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             MPI_Reduce(&time, &tavg, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-            MPI_Reduce(&((it->second).overhead_comm), &tover_comm, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-            MPI_Reduce(&((it->second).overhead_calc), &tover_calc, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-            
+            tover_comm = get_avg((it->second).overhead_comm, nexec, is_done);
+            tover_calc = get_avg((it->second).overhead_calc, nexec, is_done);
+            //MPI_Reduce(&((it->second).overhead_comm), &tover_comm, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+            //MPI_Reduce(&((it->second).overhead_calc), &tover_calc, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
             if (rank == 0) {
                 if (nexec == 0) {
                     std::cout << get_name() << ": " << "{ " << "len: " << len << ", "
                         << " error: \"no successful executions!\"" << " }" << std::endl;
                 } else {
                     tavg /= nexec;
-                    tover_calc /= nexec;
+                    //tover_calc /= nexec;
                     std::cout << get_name() << ": " << "{ " << "len: " << len << ", "
                         << "ncycles: " << (it->second).ncycles << ", "
                         << " time: [ " << tmin << ", " 
@@ -653,7 +671,7 @@ namespace async_suite {
 #if 1
 //        if (getenv("IMB_ASYNC_CPER10USEC")) {        
             double timings[3];
-            int warmup = 6;
+            int warmup = 12;
             int Nrep = (50000000 / (2 * SIZE*SIZE)) + 1;
             for (int k = 0; k < 3+warmup; k++) {
                 double t1 = MPI_Wtime();
@@ -697,12 +715,13 @@ namespace async_suite {
             MPI_Allreduce(&Nrep, &ncalcs_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
             MPI_Allreduce(&Nrep, &ncalcs_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
             ncalcs /= np;
-            
+#if 0 
             char node[80];
             gethostname(node, 80-1);
             std::cout << ">> cper10usec: node: " << node << " " << Nrep << std::endl;
             if (rank == 0)
                 std::cout << ">> cper10usec=" << ncalcs << " min/max=" << ncalcs_min << "/" << ncalcs_max << std::endl;
+#endif            
 //        }
 #endif
     }
