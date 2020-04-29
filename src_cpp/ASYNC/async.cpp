@@ -240,6 +240,28 @@ namespace async_suite {
         yaml_out << YAML::Flow << YAML::EndMap;
     }
 
+    static inline double get_avg(double x, int nexec, int rank, int np, bool is_done) {
+        double xx = x;
+        std::vector<double> fromall;
+        if (rank == 0)
+            fromall.resize(np);
+        if (!is_done) 
+            xx = 0;
+        MPI_Gather(&xx, 1, MPI_DOUBLE, fromall.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        if (rank != 0)
+            return 0;
+        std::sort(fromall.begin(), fromall.end());
+        if (nexec == 0)
+            return 0;
+        int off = np - nexec;
+        if (nexec == 1)
+            return fromall[off];
+        if (nexec == 2) {
+            return (fromall[off] + fromall[off+1]) / 2.0;
+        }
+        return fromall[off + nexec / 2];
+    }
+#if 0
     static inline double get_avg(double x, int nexec, bool is_done) {
         double xx = x, xsum = 0, xmin = 0, xmax = 0; 
         if (!is_done) xx = 0;
@@ -256,7 +278,7 @@ namespace async_suite {
             return xsum / nexec;
         }
     }
-
+#endif
     void AsyncBenchmark::finalize() { 
         GET_PARAMETER(YAML::Emitter, yaml_out);
         YamlOutputMaker yaml_tmin("tmin");
@@ -276,18 +298,14 @@ namespace async_suite {
             MPI_Reduce(&time, &tmin, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
             if (!(it->second).done) time = 0.0;
             MPI_Reduce(&time, &tmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-            MPI_Reduce(&time, &tavg, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-            tover_comm = get_avg((it->second).overhead_comm, nexec, is_done);
-            tover_calc = get_avg((it->second).overhead_calc, nexec, is_done);
-            //MPI_Reduce(&((it->second).overhead_comm), &tover_comm, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-            //MPI_Reduce(&((it->second).overhead_calc), &tover_calc, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+            tavg = get_avg(time, nexec, rank, np, is_done); 
+            tover_comm = get_avg((it->second).overhead_comm, nexec, rank, np, is_done);
+            tover_calc = get_avg((it->second).overhead_calc, nexec, rank, np, is_done);
             if (rank == 0) {
                 if (nexec == 0) {
                     std::cout << get_name() << ": " << "{ " << "len: " << len << ", "
                         << " error: \"no successful executions!\"" << " }" << std::endl;
                 } else {
-                    tavg /= nexec;
-                    //tover_calc /= nexec;
                     std::cout << get_name() << ": " << "{ " << "len: " << len << ", "
                         << "ncycles: " << (it->second).ncycles << ", "
                         << " time: [ " << tmin << ", " 
@@ -834,19 +852,18 @@ namespace async_suite {
         time = (t2 - t1);
 
         tover_calc = 0;
-        // FIXME!! temporarely switched off
-#if 0        
+#if 1        
         int pure_calc_time = int((time - tover_comm) * 1e6);
         if (!pure_calc_time)
             return true;
         real_cper10usec = R * 10 / pure_calc_time;
-        std::cout << ">> time=" << time << " " << "tover_comm=" << tover_comm << std::endl;
-        std::cout << ">> pure_calc_time=" << pure_calc_time << " " << "real_cper10usec=" << real_cper10usec << std::endl;
-        std::cout << ">> cper10usec=" << cper10usec << std::endl;
+        //std::cout << ">> time=" << time << " " << "tover_comm=" << tover_comm << std::endl;
+        //std::cout << ">> pure_calc_time=" << pure_calc_time << " " << "real_cper10usec=" << real_cper10usec << std::endl;
+        //std::cout << ">> cper10usec=" << cper10usec << std::endl;
         if (cper10usec && real_cper10usec) {
             int R0 = pure_calc_time * cper10usec / 10;
             tover_calc = (double)(R0 - R) / (double)real_cper10usec * 1e-5;
-            std::cout << ">> R0=" << R0 << " " << "R=" << R << std::endl;
+            //std::cout << ">> R0=" << R0 << " " << "R=" << R << std::endl;
             if (tover_calc < 1e6)
                 tover_calc = 0;
         }
