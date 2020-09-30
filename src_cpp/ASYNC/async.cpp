@@ -53,7 +53,7 @@ goods and services.
 //!!!
 #include <unistd.h>
 
-#if 1
+#if 0
 namespace sys {
 // NOTE: seems to be Linux-specific
 static inline size_t getnumcores() {
@@ -128,9 +128,11 @@ namespace async_suite {
         allocated_size = size_to_alloc;
         MPI_Comm_size(MPI_COMM_WORLD, &np);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#if 0        
 		//int nthreads = 0;
 		//std::cout << ">> rank=" << rank << ": " << "thread affinity: " << (int)sys::threadaffinityisset(nthreads) << std::endl;
         //std::cout << ">> rank=" << rank << ": " << "nthreads:  " << nthreads << std::endl;
+#endif
         is_rank_active = set_stride(rank, np, stride, group);
     }
 
@@ -167,6 +169,7 @@ namespace async_suite {
 
     void AsyncBenchmark_ina2a::init() {
         AsyncBenchmark::init();
+        std::cout << ">> " << get_name() << ": before calc init" << std::endl;
         calc.init();
         topohelper topo(np, rank);
         std::vector<int> sources { topo.prev(stride), topo.next(stride) };
@@ -189,6 +192,7 @@ namespace async_suite {
 
     void AsyncBenchmark_rma_ipt2pt::init() {
         AsyncBenchmark::init();
+        std::cout << ">> " << get_name() << ": before calc init" << std::endl;
         calc.init();
         MPI_Win_create(sbuf, allocated_size, dtsize, MPI_INFO_NULL,
                        MPI_COMM_WORLD, &win);
@@ -250,7 +254,7 @@ namespace async_suite {
         MPI_Gather(&xx, 1, MPI_DOUBLE, fromall.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         if (rank != 0)
             return 0;
-        char *avg_option = nullptr;
+        const char *avg_option = nullptr;
         if (!(avg_option = getenv("IMB_ASYNC_AVG_OPT"))) {
             avg_option = "MEDIAN";
         }
@@ -390,6 +394,7 @@ namespace async_suite {
 
     void AsyncBenchmark_ipt2pt::init() {
         AsyncBenchmark::init();
+        std::cout << ">> " << get_name() << ": before calc init" << std::endl;
         calc.init();
     }
 
@@ -501,6 +506,7 @@ namespace async_suite {
 
     void AsyncBenchmark_iallreduce::init() {
         AsyncBenchmark::init();
+        std::cout << ">> " << get_name() << ": before calc init" << std::endl;
         calc.init();
     }
 
@@ -692,9 +698,9 @@ namespace async_suite {
 
     void AsyncBenchmark_calc::init() {
         AsyncBenchmark::init();
-
         GET_PARAMETER(std::vector<int>, calctime);
         GET_PARAMETER(workload_t, workload);
+        GET_PARAMETER(int, cper10usec);
         wld = workload;
         for (size_t i = 0; i < len.size(); i++) {
             calctime_by_len[len[i]] = (i >= calctime.size() ? (calctime.size() == 0 ? 10000 : calctime[calctime.size() - 1]) : calctime[i]);
@@ -706,66 +712,72 @@ namespace async_suite {
                 a[i][j] = 1.;
             }
         }
-#if 1
+        
         double timings[3];
-        int warmup = 12;
+        int warmup = 0;
+        // NOTE: you may set IMB_ASYNC_ESTIMATION_CYCLES to some positive value 
+        // to introduce output of calibration results.
+        // NOTE: you may also set IMB_ASYNC_ESTIMATION_CYCLES=0 to disable calibration loop,
+        // then the -cper10usec option is required
         char *estcycles = nullptr;
         if ((estcycles = getenv("IMB_ASYNC_ESTIMATION_CYCLES"))) {
             warmup = std::stoi(estcycles);
-        }       
-        int Nrep = (50000000 / (2 * SIZE*SIZE)) + 1;
-        for (int k = 0; k < 3+warmup; k++) {
-            double t1 = MPI_Wtime();
-            double tover = 0;
-            for (int repeat = 0, cnt=999999; repeat < Nrep; repeat++) {
-                if (--cnt == 0) { 
-                    double ot1 = MPI_Wtime();
-                    if (reqs && num_requests) {
-                        for (int r = 0; r < num_requests; r++) {
-                            if (!stat[r]) {
-                                total_tests++;
-                                MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
-                                if (stat[r]) {
-                                    successful_tests++;
+        }
+        if (warmup == 0 && cper10usec == 0) {
+            throw std::runtime_error("AsyncBenchmark_calc: either -cper10usec option or IMB_ASYNC_ESTIMATION_CYCLES environment is required.");
+        }
+        if (warmup != 0) {        
+            int Nrep = (50000000 / (2 * SIZE*SIZE)) + 1;
+            for (int k = 0; k < 3+warmup; k++) {
+                double t1 = MPI_Wtime();
+                double tover = 0;
+                for (int repeat = 0, cnt=999999; repeat < Nrep; repeat++) {
+                    if (--cnt == 0) { 
+                        double ot1 = MPI_Wtime();
+                        if (reqs && num_requests) {
+                            for (int r = 0; r < num_requests; r++) {
+                                if (!stat[r]) {
+                                    total_tests++;
+                                    MPI_Test(&reqs[r], &stat[r], MPI_STATUS_IGNORE);
+                                    if (stat[r]) {
+                                        successful_tests++;
+                                    }
                                 }
                             }
                         }
-                    }
-                    double ot2 = MPI_Wtime();
-                    tover += (ot2-ot1);
-                } 
-                for (int i = 0; i < SIZE; i++) {
-                    for (int j = 0; j < SIZE; j++) {
-                        for (int k = 0; k < SIZE; k++) {
-                            c[i][j] += a[i][k] * b[k][j] + repeat*repeat;
+                        double ot2 = MPI_Wtime();
+                        tover += (ot2-ot1);
+                    } 
+                    for (int i = 0; i < SIZE; i++) {
+                        for (int j = 0; j < SIZE; j++) {
+                            for (int k = 0; k < SIZE; k++) {
+                                c[i][j] += a[i][k] * b[k][j] + repeat*repeat;
+                            }
                         }
                     }
-                }
 
+                }
+                double t2 = MPI_Wtime();
+                if (k >= warmup)
+                    timings[k-warmup] = t2 - t1;
             }
-            double t2 = MPI_Wtime();
-            if (k >= warmup)
-                timings[k-warmup] = t2 - t1;
+            double tmedian = std::min(timings[0], timings[1]);
+            if (tmedian < timings[2])
+                tmedian = std::min(std::max(timings[0], timings[1]), timings[2]);
+            Nrep = (int)((double)Nrep / (tmedian * 1.0e5) + 0.99);
+            int ncalcs_min = 0, ncalcs_max = 0;
+            MPI_Allreduce(&Nrep, &ncalcs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce(&Nrep, &ncalcs_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+            MPI_Allreduce(&Nrep, &ncalcs_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+            ncalcs /= np;
+            if (estcycles) {
+                char node[80];
+                gethostname(node, 80-1);
+                std::cout << ">> cper10usec: node: " << node << " " << Nrep << std::endl;
+                if (rank == 0)
+                    std::cout << ">> cper10usec=" << ncalcs << " min/max=" << ncalcs_min << "/" << ncalcs_max << std::endl;
+            }
         }
-        double tmedian = std::min(timings[0], timings[1]);
-        if (tmedian < timings[2])
-            tmedian = std::min(std::max(timings[0], timings[1]), timings[2]);
-        Nrep = (int)((double)Nrep / (tmedian * 1.0e5) + 0.99);
-        int ncalcs_min = 0, ncalcs_max = 0;
-        MPI_Allreduce(&Nrep, &ncalcs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-        MPI_Allreduce(&Nrep, &ncalcs_min, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-        MPI_Allreduce(&Nrep, &ncalcs_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-        ncalcs /= np;
-#if 1
-        if (estcycles) {
-            char node[80];
-            gethostname(node, 80-1);
-            std::cout << ">> cper10usec: node: " << node << " " << Nrep << std::endl;
-            if (rank == 0)
-                std::cout << ">> cper10usec=" << ncalcs << " min/max=" << ncalcs_min << "/" << ncalcs_max << std::endl;
-        }
-#endif            
-#endif
     }
 
     bool AsyncBenchmark_calc::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
@@ -792,10 +804,11 @@ namespace async_suite {
                 stat[r] = 0;
             }
         }
+        const int cnt_for_mpi_test = 90;
         if (wld == workload_t::CALC_AND_PROGRESS) {
             for (int i = 0; i < ncycles + nwarmup; i++) {
                 if (i == nwarmup) t1 = MPI_Wtime();
-                for (int repeat = 0, cnt = 90; repeat < R; repeat++) {
+                for (int repeat = 0, cnt = cnt_for_mpi_test; repeat < R; repeat++) {
 #if 1                
                     if (--cnt == 0) {
 #if 1 
@@ -818,11 +831,11 @@ namespace async_suite {
                            std::cout << ">> OK: Iprobe" << std::endl;
                            do_probe = false;
                            }
-                           */
+                        */
                         ot2 = MPI_Wtime();
                         tover_comm += (ot2 - ot1);
 #endif
-                        cnt = 90;
+                        cnt = cnt_for_mpi_test;
                     }
 #endif                
                     for (int i = 0; i < SIZE; i++) {
@@ -870,20 +883,14 @@ namespace async_suite {
         }
         t2 = MPI_Wtime();
         time = (t2 - t1);
-
-        tover_calc = 0;
 #if 1        
         int pure_calc_time = int((time - tover_comm) * 1e6);
         if (!pure_calc_time)
             return true;
         real_cper10usec = R * 10 / pure_calc_time;
-        //std::cout << ">> time=" << time << " " << "tover_comm=" << tover_comm << std::endl;
-        //std::cout << ">> pure_calc_time=" << pure_calc_time << " " << "real_cper10usec=" << real_cper10usec << std::endl;
-        //std::cout << ">> cper10usec=" << cper10usec << std::endl;
         if (cper10usec && real_cper10usec) {
             int R0 = pure_calc_time * cper10usec / 10;
             tover_calc = (double)(R0 - R) / (double)real_cper10usec * 1e-5;
-            //std::cout << ">> R0=" << R0 << " " << "R=" << R << std::endl;
             if (tover_calc < 1e6)
                 tover_calc = 0;
         }
