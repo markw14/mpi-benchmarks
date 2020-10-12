@@ -85,17 +85,31 @@ namespace async_suite {
         int stat[10];
         int total_tests = 0;
         int successful_tests = 0;
-        int num_requests;
-        /*bool do_probe;*/
+        int num_requests = 0;
         workload_t wld;
+        int irregularity_level = 0;
         std::map<int, int> calctime_by_len;
         static const int SIZE = 7;
-        int ncalcs;
+        int cper10usec_avg = 0, cper10usec_min = 0, cper10usec_max = 0;
         float a[SIZE][SIZE], b[SIZE][SIZE], c[SIZE][SIZE], x[SIZE], y[SIZE];
+        void calc_and_progress_cycle(int R, int iters_till_test, double &tover_comm);
         public:
+        void calibration();
         virtual void init() override;
         virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) override;
+        virtual bool is_default() { return false; }
         DEFINE_INHERITED(AsyncBenchmark_calc, BenchmarkSuite<BS_GENERIC>);
+    };
+
+    class AsyncBenchmark_calibration : public Benchmark {
+        AsyncBenchmark_calc calc;
+        int np = 0, rank = 0;
+        public:
+        virtual void init() override;
+        virtual void run(const scope_item &item) override; 
+        virtual void finalize() override;
+        virtual bool is_default() override { return false; }
+        DEFINE_INHERITED(AsyncBenchmark_calibration, BenchmarkSuite<BS_GENERIC>);
     };
 
     class AsyncBenchmark_pt2pt : public AsyncBenchmark {

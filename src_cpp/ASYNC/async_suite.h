@@ -77,12 +77,14 @@ namespace async_suite {
                      set_caption("INT,INT,...");
         parser.add<std::string>("datatype", "double").set_caption("double|float|int|char");
         parser.add_vector<int>("ncycles", "1000");
-        parser.add<int>("nwarmup", 0); //3);
+        parser.add<int>("nwarmup", 0).set_caption("INT -- number of warmup cycles [default: 0]");
         parser.add_vector<int>("calctime", "10,10,50,500,10000").
                      set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING).
                      set_caption("INT,INT,...");
         parser.add<std::string>("workload", "none").set_caption("none|calc|calc_and_progress|calc_and_mpich_progress");
-        parser.add<int>("cper10usec", 0).set_caption("INT -- amount of calc cycles per 10 microseconds in normal mode");
+        parser.add<int>("cper10usec", 0).set_caption("INT -- calibration result: measured number of calc cycles per 10 microseconds in normal mode");
+        parser.add<int>("estcycles", 3).set_caption("INT -- for calibration mode: number of repeating estimation cycles [default: 3]");
+        parser.add<int>("spinperiod", 50).set_caption("INT -- for calc_and_progress: time period in microseconds between sequential MPI_Test calls [default: 50]");
         parser.set_default_current_group();
         return true;
     }
@@ -95,6 +97,8 @@ namespace async_suite {
     std::vector<int> ncycles;
     int nwarmup;
     int cper10usec;
+    int estcycles;
+    int spinperiod;
     enum workload_t {
         NONE, CALC, CALC_AND_PROGRESS, CALC_AND_MPICH_PROGRESS
     } workload;
@@ -137,6 +141,8 @@ namespace async_suite {
         parser.get<int>("ncycles", ncycles);
         nwarmup = parser.get<int>("nwarmup");
         yaml_outfile = parser.get<std::string>("output");
+        estcycles = parser.get<int>("estcycles");
+        spinperiod = parser.get<int>("spinperiod");
         yaml_out << YAML::BeginDoc;
         yaml_out << YAML::BeginMap;
         return true;
@@ -169,6 +175,8 @@ namespace async_suite {
         HANDLE_PARAMETER(std::vector<int>, ncycles);
         HANDLE_PARAMETER(int, nwarmup);
         HANDLE_PARAMETER(int, cper10usec);
+        HANDLE_PARAMETER(int, estcycles);
+        HANDLE_PARAMETER(int, spinperiod);
         HANDLE_PARAMETER(workload_t, workload);
         return result;
     }
