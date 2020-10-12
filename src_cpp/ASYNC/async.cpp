@@ -847,7 +847,7 @@ namespace async_suite {
                 stat[r] = 0;
             }
         }
-        const int cnt_for_mpi_test = spinperiod;
+        const int cnt_for_mpi_test = std::max(spinperiod * cper10usec / 10, 1);
         if (wld == workload_t::CALC_AND_PROGRESS) {
             for (int i = 0; i < ncycles + nwarmup; i++) {
                 if (i == nwarmup) 
