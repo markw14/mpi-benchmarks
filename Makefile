@@ -1,3 +1,6 @@
+#
+# Copyright (C) 2019-2020 Alexey V. Medvedev
+#
 #*****************************************************************************
 # *                                                                           *
 # * Copyright 2016-2018 Intel Corporation.                                    *
@@ -47,38 +50,13 @@
 #
 #  ***************************************************************************
 
-all: IMB-MPI1 IMB-NBC IMB-RMA IMB-EXT IMB-IO IMB-MT
+all: IMB-ASYNC
 
-IMB-MPI1:
-	make -j8 -C src_cpp -f Makefile TARGET=MPI1
-	@cp src_cpp/IMB-MPI1 .
-
-IMB-NBC:
-	make -C src_cpp -f Makefile TARGET=NBC
-	@cp src_cpp/IMB-NBC .
-
-IMB-EXT:
-	make -C src_cpp -f Makefile TARGET=EXT
-	@cp src_cpp/IMB-EXT .
-
-IMB-RMA:
-	make -C src_cpp -f Makefile TARGET=RMA
-	@cp src_cpp/IMB-RMA .
-
-IMB-IO:
-	make -C src_cpp -f Makefile TARGET=IO
-	@cp src_cpp/IMB-IO .
-
-IMB-MT: | IMB-MPI1
-	make -j8 -C src_cpp -f Makefile TARGET=MT
-	@cp src_cpp/IMB-MT .
+IMB-ASYNC:
+	make -C src_cpp -f Makefile TARGET=ASYNC
+	@cp src_cpp/IMB-ASYNC .
 
 
 clean:
-	make -C src_cpp -f Makefile TARGET=MPI1 clean
-	make -C src_cpp -f Makefile TARGET=NBC clean
-	make -C src_cpp -f Makefile TARGET=RMA clean
-	make -C src_cpp -f Makefile TARGET=EXT clean
-	make -C src_cpp -f Makefile TARGET=IO clean
-	make -C src_cpp -f Makefile TARGET=MT clean
-	rm -f IMB-MPI1 IMB-NBC IMB-RMA IMB-EXT IMB-IO IMB-MT
+	make -C src_cpp -f Makefile TARGET=ASYNC clean
+	rm -f IMB-ASYNC
