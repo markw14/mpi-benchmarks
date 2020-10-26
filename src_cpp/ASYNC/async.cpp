@@ -450,8 +450,10 @@ namespace async_suite {
         return true;
     }
 
+#define EXTRA_BARRIER 0
+
     void barrier(int rank, int np) {
-#if 0
+#if !EXTRA_BARRIER
         (void)rank;
         (void)np;
         MPI_Barrier(MPI_COMM_WORLD);
@@ -485,10 +487,12 @@ namespace async_suite {
                 time += (t2 - t1);
             }
             barrier(rank, np);
+#if EXTRA_BARRIER
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
+#endif
         }
         time /= ncycles;
         MPI_Barrier(MPI_COMM_WORLD);
@@ -524,10 +528,12 @@ namespace async_suite {
                 total_tover_calc += local_tover_calc;
             }
             barrier(rank, np);
+#if EXTRA_BARRIER
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
+#endif
         }
         time /= ncycles;
         ctime = total_ctime / ncycles;
@@ -559,10 +565,12 @@ namespace async_suite {
                 time += (t2 - t1);
             }
             barrier(rank, np);
+#if EXTRA_BARRIER
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
+#endif
         }
         time /= ncycles;
         MPI_Barrier(MPI_COMM_WORLD);
@@ -599,10 +607,12 @@ namespace async_suite {
                 total_tover_calc += local_tover_calc;
             }
             barrier(rank, np);
+#if EXTRA_BARRIER
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
             barrier(rank, np);
+#endif
         }
         time /= ncycles;
         ctime = total_ctime / ncycles;
