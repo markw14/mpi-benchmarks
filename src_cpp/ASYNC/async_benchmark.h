@@ -97,7 +97,7 @@ namespace async_suite {
         void calibration();
         virtual void init() override;
         virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) override;
-        virtual bool is_default() { return false; }
+        virtual bool is_default() override { return false; }
         DEFINE_INHERITED(AsyncBenchmark_calc, BenchmarkSuite<BS_GENERIC>);
     };
 
@@ -162,8 +162,6 @@ namespace async_suite {
  
     class AsyncBenchmark_rma_pt2pt : public AsyncBenchmark {
         public:
-        MPI_Info info;
-        MPI_Group comm_group, wgroup;
         MPI_Win win;    
         virtual void init() override;
         virtual bool benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) override;

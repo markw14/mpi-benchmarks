@@ -178,10 +178,7 @@ namespace async_suite {
    
     void AsyncBenchmark_rma_pt2pt::init() {
         AsyncBenchmark::init();
-        MPI_Comm_group(MPI_COMM_WORLD, &comm_group);
-        MPI_Info_create(&info);
-        MPI_Info_set(info, "no_locks", "true");
-        MPI_Win_create(sbuf, allocated_size, dtsize, info,
+        MPI_Win_create(sbuf, allocated_size, dtsize, MPI_INFO_NULL,
                        MPI_COMM_WORLD, &win);
     }
 
@@ -279,24 +276,7 @@ namespace async_suite {
         }
         return -1;
     }
-#if 0
-    static inline double get_avg(double x, int nexec, bool is_done) {
-        double xx = x, xsum = 0, xmin = 0, xmax = 0; 
-        if (!is_done) xx = 0;
-        MPI_Reduce(&xx, &xsum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        if (!is_done) xx = 0;
-        MPI_Reduce(&xx, &xmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (!is_done) xx = 1e32;
-        MPI_Reduce(&xx, &xmin, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
-        if (nexec == 0)
-            return 0;
-        if (nexec > 4) {
-            return (xsum - xmin - xmax) / (nexec - 2);
-        } else {
-            return xsum / nexec;
-        }
-    }
-#endif
+
     void AsyncBenchmark::finalize() { 
         GET_PARAMETER(YAML::Emitter, yaml_out);
         YamlOutputMaker yaml_tmin("tmin");
@@ -639,15 +619,11 @@ namespace async_suite {
         } else {
             pair = rank - stride;
         }
-        MPI_Group_incl(comm_group, 1, &pair, &wgroup);
-        for(int i = 0; i < ncycles + nwarmup; i++) {
+        for (int i = 0; i < ncycles + nwarmup; i++) {
             if (i == nwarmup) t1 = MPI_Wtime();
-            // TODO MPI_MODE_NOSTORE | MPI_MODE_NOPUT
-            MPI_Win_post(wgroup, 0, win);
-            MPI_Win_start(wgroup, 0, win);
+            MPI_Win_lock(MPI_LOCK_SHARED, pair, 0, win);
             MPI_Get((char*)rbuf + (i%n)*b, count, datatype, pair, (i%n)*b/dtsize, count, datatype, win);
-            MPI_Win_complete(win);
-            MPI_Win_wait(win);
+            MPI_Win_unlock(pair, win);
         }
         t2 = MPI_Wtime();
         time = (t2 - t1) / ncycles;
@@ -666,8 +642,10 @@ namespace async_suite {
         double t1 = 0, t2 = 0, ctime = 0, total_ctime = 0, total_tover_comm = 0, total_tover_calc = 0,
                                           local_ctime = 0, local_tover_comm = 0, local_tover_calc = 0;
         int pair = -1;
-        calc.reqs = nullptr;
-        calc.num_requests = 0;
+        MPI_Request request[1];
+        calc.reqs = request;
+        calc.num_requests = 1;
+        MPI_Status status;
         if (group % 2 == 0) {
             pair = rank + stride;
         } else {
@@ -676,15 +654,15 @@ namespace async_suite {
         for (int i = 0; i < ncycles + nwarmup; i++) {
             if (i == nwarmup) t1 = MPI_Wtime();
             MPI_Win_lock(MPI_LOCK_SHARED, pair, 0, win);
-            MPI_Get((char*)rbuf + (i%n)*b, count, datatype, pair, (i%n)*b/dtsize, count, datatype, win);
-            MPI_Win_flush(pair, win);
+            MPI_Rget((char*)rbuf + (i%n)*b, count, datatype, pair, (i%n)*b/dtsize, count, datatype, win, request);
             calc.benchmark(count, datatype, 0, 1, local_ctime, local_tover_comm, local_tover_calc);
+            MPI_Wait(request, &status);
+            MPI_Win_unlock(pair, win);
             if (i >= nwarmup) {
                 total_ctime += local_ctime;
                 total_tover_comm += local_tover_comm;
                 total_tover_calc += local_tover_calc;
             }
-            MPI_Win_unlock(pair, win);
         }
         t2 = MPI_Wtime();
         time = (t2 - t1) / ncycles;
@@ -946,6 +924,6 @@ namespace async_suite {
     DECLARE_INHERITED(AsyncBenchmark_ina2a, async_na2a)
     DECLARE_INHERITED(AsyncBenchmark_rma_pt2pt, sync_rma_pt2pt)
     DECLARE_INHERITED(AsyncBenchmark_rma_ipt2pt, async_rma_pt2pt)
-    DECLARE_INHERITED(AsyncBenchmark_calc, async_calc)
-    DECLARE_INHERITED(AsyncBenchmark_calibration, async_calibration)
+    DECLARE_INHERITED(AsyncBenchmark_calc, calc)
+    DECLARE_INHERITED(AsyncBenchmark_calibration, calc_calibration)
 }

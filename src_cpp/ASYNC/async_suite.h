@@ -158,6 +158,38 @@ namespace async_suite {
         }
     }
 
+	template <class SUITE>
+	bool is_not_default(const std::string &name) {
+		std::shared_ptr<Benchmark> b = SUITE::get_instance().create(name);
+		if (b.get() == nullptr) {
+			return false;
+		}
+		return !b->is_default();
+	}
+
+    template <> void BenchmarkSuite<BS_GENERIC>::get_bench_list(std::vector<std::string> &benchs,
+                                          BenchmarkSuiteBase::BenchListFilter filter) const {
+		get_full_list(benchs);
+		if (filter == BenchmarkSuiteBase::DEFAULT_BENCHMARKS) {
+			for (size_t i = benchs.size() - 1; i != 0; i--) {
+				if (is_not_default<BenchmarkSuite<BS_GENERIC>>(benchs[i]))
+					benchs.erase(benchs.begin() + i);
+			}
+		}
+	}
+
+	template <> void BenchmarkSuite<BS_GENERIC>::get_bench_list(std::set<std::string> &benchs,
+                                          BenchmarkSuiteBase::BenchListFilter filter) const {
+		get_full_list(benchs);
+		if (filter == BenchmarkSuiteBase::DEFAULT_BENCHMARKS) {
+			for (auto &bench_name : benchs) {
+				if (is_not_default<BenchmarkSuite<BS_GENERIC>>(bench_name))
+					benchs.erase(bench_name);
+			}
+		}
+	}
+     
+
 #define HANDLE_PARAMETER(TYPE, NAME) if (key == #NAME) { \
                                         result = std::shared_ptr< TYPE >(&NAME, []( TYPE *){}); \
                                      }
