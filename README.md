@@ -1,11 +1,10 @@
 # Intel(R) MPI Benchmarks: IMB-ASYNC
 [![Common Public License Version 1.0](https://img.shields.io/badge/license-Common%20Public%20License%20Version%201.0-green.svg)](license/license.txt)
-![v2019](https://img.shields.io/badge/v.2019-Gold-orange.svg)
 --------------------------------------------------
 
-The IMB-ASYNC benchmark suite is a small collection of microbenchmark tools which
-help to fairly estimate the MPI message passing asynchronous performance (asynchronity level,
-asynchronous progress performance) in several useful scenarios.
+The IMB-ASYNC benchmark suite is a collection of microbenchmark tools which
+help to fairly estimate the MPI asynchronous progress performance (computation-communication overlap) 
+in many useful scenarios.
 
 The individual bechmarks include:
 - sync_pt2p2, async_pt2pt -- ping-pong style point-to-point benchmark with stride between peers 
@@ -54,4 +53,4 @@ which it is based on.
 
 (C) Intel Corporation
 
-(C) Alexey V. Medvedev (2019-2020)
+(C) Alexey V. Medvedev (2019-2021)
