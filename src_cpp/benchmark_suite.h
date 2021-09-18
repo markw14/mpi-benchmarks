@@ -99,6 +99,16 @@ class BenchmarkSuite : public BenchmarkSuiteBase {
         static void get_full_list(std::vector<std::string> &all_benchmarks) {
             get_instance().do_get_full_list(all_benchmarks);
         }
+        template <typename T>
+        static void filter_out_non_default(T &all_benchmarks) {
+            T result;
+            for (auto &name : all_benchmarks) {
+                auto b = get_instance().do_create(name);
+                if (b != nullptr && b->is_default())
+                    (*std::inserter(result, result.end())) = name;
+            }
+            all_benchmarks = result;
+        }
         virtual std::shared_ptr<Benchmark> create(const std::string &s) { return get_instance().do_create(s); }
         virtual any get_parameter(const std::string &key) { UNUSED(key); return any(); }
         
@@ -136,12 +146,14 @@ class BenchmarkSuite : public BenchmarkSuiteBase {
         }
     public:
         virtual void get_bench_list(std::set<std::string> &benchs, BenchListFilter filter = ALL_BENCHMARKS) const {
-            UNUSED(filter);
-            get_full_list(benchs); 
+            get_full_list(benchs);
+            if (filter == DEFAULT_BENCHMARKS)
+                filter_out_non_default(benchs);
         }
         virtual void get_bench_list(std::vector<std::string> &benchs, BenchListFilter filter = ALL_BENCHMARKS) const {
-            UNUSED(filter);
             get_full_list(benchs); 
+            if (filter == DEFAULT_BENCHMARKS)
+                filter_out_non_default(benchs);
         }
         virtual const std::string get_name() const;
  

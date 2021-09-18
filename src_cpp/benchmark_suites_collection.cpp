@@ -65,7 +65,8 @@ DECLARE_BENCHMARK_SUITE_STUFF(BS_GENERIC, __generic__)
 
 namespace { 
     struct Dummy : public Benchmark {
-        void run(const scope_item &) {}
+        virtual void run(const scope_item &) override {}
+        virtual bool is_default() override { return false; }
         DEFINE_INHERITED(Dummy, BenchmarkSuite<BS_GENERIC>)
     };
     DECLARE_INHERITED(Dummy, Dummy)

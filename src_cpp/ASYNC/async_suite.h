@@ -60,13 +60,33 @@ goods and services.
 #include "benchmark_suites_collection.h"
 #include "scope.h"
 #include "utils.h"
-#include "argsparser.h"
+
+#include "async_params.h"
+#include "extensions/params/params.inl"
 
 namespace async_suite {
+
+    static inline std::vector<std::string> filter_out_mode(const std::vector<std::string> &benchs) {
+        std::vector<std::string> result;
+        std::set<std::string> s;
+        for (const auto &b : benchs) {
+            std::string bfiltered;
+            if (b.substr(0, 5) == "sync_")
+                bfiltered = b.substr(5, b.size() - 5);
+            else if (b.substr(0, 6) == "async_")
+                bfiltered = b.substr(6, b.size() - 6);
+            else
+                bfiltered = b;
+            s.insert(bfiltered);
+        }
+        result.assign(s.begin(), s.end());
+        return result;
+    }
 
     #include "benchmark_suite.h"
 
     DECLARE_BENCHMARK_SUITE_STUFF(BS_GENERIC, async_suite)
+
 
     template <> bool BenchmarkSuite<BS_GENERIC>::declare_args(args_parser &parser,
                                                               std::ostream &output) const {
@@ -81,10 +101,11 @@ namespace async_suite {
         parser.add_vector<int>("calctime", "10,10,50,500,10000").
                      set_mode(args_parser::option::APPLY_DEFAULTS_ONLY_WHEN_MISSING).
                      set_caption("INT,INT,...");
-        parser.add<std::string>("workload", "none").set_caption("none|calc|calc_and_progress|calc_and_mpich_progress");
-        parser.add<int>("cper10usec", 0).set_caption("INT -- calibration result: measured number of calc cycles per 10 microseconds in normal mode");
-        parser.add<int>("estcycles", 3).set_caption("INT -- for calibration mode: number of repeating estimation cycles [default: 3]");
-        parser.add<int>("spinperiod", 50).set_caption("INT -- for calc_and_progress: time period in microseconds between sequential MPI_Test calls [default: 50]");
+
+        for (const auto &b : filter_out_mode(get_instance().names_list)) {
+            std::string list_name = std::string(b) + "_params";
+            parser.add_map(list_name.c_str(), "");
+        }
         parser.set_default_current_group();
         return true;
     }
@@ -96,53 +117,58 @@ namespace async_suite {
     std::string yaml_outfile;
     std::vector<int> ncycles;
     int nwarmup;
-    int cper10usec;
-    int estcycles;
-    int spinperiod;
-    enum workload_t {
-        NONE, CALC, CALC_AND_PROGRESS, CALC_AND_MPICH_PROGRESS
-    } workload;
+	params::dictionary<params::benchmarks_params> p;
 
     template <> bool BenchmarkSuite<BS_GENERIC>::prepare(const args_parser &parser,
-                                                         const std::vector<std::string> &,
+                                                         const std::vector<std::string> &benchmarks_to_run,
                                                          const std::vector<std::string> &unknown_args,
                                                          std::ostream &output) {
         if (unknown_args.size() != 0) {
             output << "Some unknown options or extra arguments. Use -help for help." << std::endl;
             return false;
         }
+        auto components = filter_out_mode(benchmarks_to_run);
+        if (std::find(components.begin(), components.end(), "calc_calibration") != components.end()) {
+            if (components.size() != 1) {
+                throw std::runtime_error("'calc_calibration' cannot be combined with any other benchmark");
+            }
+        } else {
+            components.push_back("workload");
+        }
+		for (const auto &c : components) {
+			std::string list_name = std::string(c) + "_params";
+			std::map<std::string, std::string> pmap;
+			parser.get(list_name.c_str(), pmap);
+			p.add(c, { "component_details:", c });
+			auto &list = p.get(c);
+			for (auto &m : pmap) {
+				list.parse_and_set_value(m.first, m.second);
+			}
+		}
+        p.set_defaults();
+        params::benchmarks_params::set_output(output);
+        p.print();
+
         parser.get<int>("len", len);
         parser.get<int>("calctime", calctime);
-        cper10usec = parser.get<int>("cper10usec");
-        std::string str_workload = parser.get<std::string>("workload");
-        if (str_workload == "none") {
-            workload = workload_t::NONE; 
-        } else if (str_workload == "calc") {
-            workload = workload_t::CALC; 
-        } else if (str_workload == "calc_and_progress") {
-            workload = workload_t::CALC_AND_PROGRESS; 
-        } else if (str_workload == "calc_and_mpich_progress") {
-            workload = workload_t::CALC_AND_MPICH_PROGRESS;
-        } else {
-            output << get_name() << ": " << "Unknown workload kind in 'workload' option. Use -help for help." << std::endl;
-            return false;
-        }
-
 
         std::string dt = parser.get<std::string>("datatype");
-        if (dt == "int") datatype = MPI_INT;
-        else if (dt == "double") datatype = MPI_DOUBLE;
-	else if (dt == "float") datatype = MPI_FLOAT;
-        else if (dt == "char") datatype = MPI_CHAR;
+        if (dt == "int") 
+            datatype = MPI_INT;
+        else if (dt == "double") 
+            datatype = MPI_DOUBLE;
+        else if (dt == "float") 
+            datatype = MPI_FLOAT;
+        else if (dt == "char") 
+            datatype = MPI_CHAR;
         else {
-            output << get_name() << ": " << "Unknown data type in 'datatype' option. Use -help for help." << std::endl;
+            output << get_name() << ": " << "Unknown data type in 'datatype' option."
+                                            " Use -help for help." << std::endl;
             return false;
         }
         parser.get<int>("ncycles", ncycles);
         nwarmup = parser.get<int>("nwarmup");
         yaml_outfile = parser.get<std::string>("output");
-        estcycles = parser.get<int>("estcycles");
-        spinperiod = parser.get<int>("spinperiod");
         yaml_out << YAML::BeginDoc;
         yaml_out << YAML::BeginMap;
         return true;
@@ -162,7 +188,7 @@ namespace async_suite {
 	bool is_not_default(const std::string &name) {
 		std::shared_ptr<Benchmark> b = SUITE::get_instance().create(name);
 		if (b.get() == nullptr) {
-			return false;
+			return true;
 		}
 		return !b->is_default();
 	}
@@ -206,10 +232,7 @@ namespace async_suite {
         HANDLE_PARAMETER(YAML::Emitter, yaml_out);
         HANDLE_PARAMETER(std::vector<int>, ncycles);
         HANDLE_PARAMETER(int, nwarmup);
-        HANDLE_PARAMETER(int, cper10usec);
-        HANDLE_PARAMETER(int, estcycles);
-        HANDLE_PARAMETER(int, spinperiod);
-        HANDLE_PARAMETER(workload_t, workload);
+        HANDLE_PARAMETER(params::dictionary<params::benchmarks_params>, p);
         return result;
     }
 

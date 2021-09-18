@@ -51,7 +51,7 @@
 override CPPFLAGS += -DASYNC
 override CPPFLAGS += -IASYNC -D__USE_BSD
 
-BECHMARK_SUITE_SRC += ASYNC/async.cpp
+BECHMARK_SUITE_SRC += ASYNC/async_benchmark.cpp
 
 override CXXFLAGS += -IASYNC/thirdparty/include
 override LDFLAGS += -LASYNC/thirdparty/lib -Wl,-rpath=ASYNC/thirdparty/lib -Wl,-rpath=. -lyaml-cpp -largsparser
