@@ -229,6 +229,111 @@ struct topo_neighb : public topohelper {
 	}
 };
 
+struct topo_halo : public topohelper {
+    int ndims;
+	topo_halo(const params::list<params::benchmarks_params> &pl, int np_, int rank_) : topohelper(np_, rank_) {
+		ndims = pl.get_int("ndim");
+		bidirectional = pl.get_bool("bidirectional");
+		init();
+    }
+
+    std::vector<unsigned int> mults;
+    std::vector<unsigned int> ranksperdim;
+    int required_nranks;
+
+    template <typename integer>
+    integer gcd(integer a, integer b) {
+        if (a < 0) a = -a;
+        if (b < 0) b = -b;
+        if (a == 0) return b;
+        while (b != 0) {
+            integer remainder = a % b;
+            a = b;
+            b = remainder;
+        }
+        return a;
+    }
+
+    void init() {
+		std::vector<unsigned int> topo;
+		topo.resize(ndims, 1);
+        ranksperdim = topo;
+        {
+            unsigned int n = 0;
+            for (int i = 0; i < ndims; ++i) {
+                n = gcd(n, topo[i]);
+            }
+            assert(n > 0);
+            for (int i = 0; i < ndims; ++i) {
+                ranksperdim[i] = topo[i] / n;
+            }
+        }
+        required_nranks = 1;
+        for (int i = 0; i < ndims; ++i)
+            required_nranks *= ranksperdim[i];
+        if (np / required_nranks >= (1<<ndims)) {
+            int mult = (int)(pow(np, 1.0/ndims));
+            for (int i = 0; i < ndims; ++i)
+                ranksperdim[i] *= mult;
+            required_nranks = 1;
+            for (int i = 0; i < ndims; ++i)
+                required_nranks *= ranksperdim[i];
+        }
+        mults.resize(ndims);
+        mults[ndims - 1] = 1;
+        for (int i = ndims - 2; i >= 0; --i)
+            mults[i] = mults[i + 1] * ranksperdim[i + 1];
+    }
+
+    bool is_active() { return rank < required_nranks; }
+
+    virtual actions_t comm_actions() override {
+        actions_t peers;
+        peers.resize(ndims * (bidirectional ? 2 : 1));
+        std::vector<unsigned int> mysubs = ranktosubs(rank);
+        // construct the partners
+        for (int dim = 0, p = 0; dim < ndims; ++dim) {
+            std::vector<unsigned int> peerssubs = mysubs;
+            peerssubs[dim] = (mysubs[dim] + 1) % ranksperdim[dim];
+            auto peer = substorank(peerssubs);
+            action_t a = (((rank + peer + ((rank > peer) ? 0:1))%2) ? action_t::SEND : action_t::RECV);
+            peers[p++] = peer_t { peer, a };
+            if (bidirectional) {
+                peerssubs[dim] = (ranksperdim[dim] + mysubs[dim] - 1) % ranksperdim[dim];
+                auto peer = substorank(peerssubs);
+                action_t a = (((rank + peer + ((rank > peer) ? 0:1))%2) ? action_t::RECV : action_t::SEND);
+                peers[p++] = peer_t { peer, a };
+            }
+        }
+        return peers;
+    }
+
+    virtual size_t get_num_actions() override {
+        return comm_actions().size();
+    }
+
+    // linearize
+    int substorank(const std::vector<unsigned int> &subs) {
+        int rank = 0;
+        // last subscript varies fastest
+        for (int i = 0; i < ndims; ++i)
+            rank += mults[i] * subs[i];
+        return rank;
+    }
+
+    // delinearize
+    std::vector<unsigned int> ranktosubs(int rank) {
+        std::vector<unsigned int> subs;
+        int rem = rank;
+        for (int i = 0; i < ndims; ++i) {
+            int sub = rem / mults[i];
+            rem %= mults[i];
+            subs.push_back(sub);
+        }
+        return subs;
+    }
+};
+
 std::shared_ptr<topohelper> topohelper::create(const params::list<params::benchmarks_params> &pl,
                                                int np_, int rank_) {
     if (pl.get_string("topology") == "ping-pong") {
@@ -237,6 +342,8 @@ std::shared_ptr<topohelper> topohelper::create(const params::list<params::benchm
         return std::make_shared<topo_split>(pl, np_, rank_);
     } else if (pl.get_string("topology") == "neighb") {
         return std::make_shared<topo_neighb>(pl, np_, rank_);
+	} else if (pl.get_string("topology") == "halo") {
+        return std::make_shared<topo_halo>(pl, np_, rank_);
 	}
     throw std::runtime_error("topohelper: not supported topology in creator");
 }
