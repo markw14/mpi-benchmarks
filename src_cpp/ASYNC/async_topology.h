@@ -291,18 +291,41 @@ struct topo_halo : public topohelper {
         actions_t peers;
         peers.resize(ndims * (bidirectional ? 2 : 1));
         std::vector<unsigned int> mysubs = ranktosubs(rank);
+		// chess coloring flag
+        bool flag = (rank % 2 ? false : true);
+        unsigned int m = 1;		
+        for (auto s : ranksperdim) {
+            m *= s;
+            if (((rank / m) % 2) && !(s%2)) {
+                flag = !flag;
+            }
+        }
+        
         // construct the partners
         for (int dim = 0, p = 0; dim < ndims; ++dim) {
             std::vector<unsigned int> peerssubs = mysubs;
-            peerssubs[dim] = (mysubs[dim] + 1) % ranksperdim[dim];
-            auto peer = substorank(peerssubs);
-            action_t a = (((rank + peer + ((rank > peer) ? 0:1))%2) ? action_t::SEND : action_t::RECV);
-            peers[p++] = peer_t { peer, a };
-            if (bidirectional) {
+            {
+                peerssubs[dim] = (mysubs[dim] + 1) % ranksperdim[dim];
+                auto peer = substorank(peerssubs);
+                peers[p + (flag?0:1)] = peer_t { peer, action_t::SEND };
+            }
+            {
                 peerssubs[dim] = (ranksperdim[dim] + mysubs[dim] - 1) % ranksperdim[dim];
                 auto peer = substorank(peerssubs);
-                action_t a = (((rank + peer + ((rank > peer) ? 0:1))%2) ? action_t::RECV : action_t::SEND);
-                peers[p++] = peer_t { peer, a };
+                peers[p + (flag?1:0)] = peer_t { peer, action_t::RECV };
+            }
+            p += 2;
+        }
+        if (bidirectional) {
+            size_t n = peers.size();
+            for (size_t i = 0; i < n; i++) {
+                auto p = peers[i];
+                if (p.action == action_t::RECV) {
+                    p.action = action_t::SEND;
+                } else {
+                    p.action = action_t::RECV;
+                }
+                peers.push_back(p);
             }
         }
         return peers;
