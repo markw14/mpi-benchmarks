@@ -329,6 +329,12 @@ namespace async_suite {
         free(rbuf);
         free(sbuf);
     }
+
+    void AsyncBenchmark_pt2pt::init() {
+        AsyncBenchmark::init();
+        calc.init();
+    }
+
     bool AsyncBenchmark_pt2pt::benchmark(int count, MPI_Datatype datatype, int nwarmup, int ncycles, double &time, double &tover_comm, double &tover_calc) {
         tover_comm = 0;
 	    tover_calc = 0;
@@ -338,7 +344,8 @@ namespace async_suite {
         }
         size_t b = (size_t)count * (size_t)dtsize;
         size_t n = allocated_size / b;
-        double t1 = 0, t2 = 0;
+        double t1 = 0, t2 = 0, total_ctime = 0, total_tover_comm = 0, total_tover_calc = 0, 
+                                          local_ctime = 0, local_tover_comm = 0, local_tover_calc = 0;;
         const int tag = 1;
         int pair = -1;
         if (group % 2 == 0) {
@@ -347,6 +354,12 @@ namespace async_suite {
                 if (i == nwarmup) t1 = MPI_Wtime();
                 MPI_Send((char*)sbuf + (i%n)*b, count, datatype, pair, tag, MPI_COMM_WORLD);
                 MPI_Recv((char*)rbuf + (i%n)*b, count, datatype, pair, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                calc.benchmark(count, datatype, 0, 1, local_ctime, local_tover_comm, local_tover_calc);
+                if (i >= nwarmup) {
+                    total_ctime += local_ctime;
+                    total_tover_comm += local_tover_comm;
+                    total_tover_calc += local_tover_calc;
+                }
             }
             t2 = MPI_Wtime();
             time = (t2 - t1) / ncycles;
@@ -356,6 +369,12 @@ namespace async_suite {
                 if (i == nwarmup) t1 = MPI_Wtime();
                 MPI_Recv((char*)rbuf + (i%n)*b, count, datatype, pair, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 MPI_Send((char*)sbuf + (i%n)*b, count, datatype, pair, tag, MPI_COMM_WORLD);
+                calc.benchmark(count, datatype, 0, 1, local_ctime, local_tover_comm, local_tover_calc);
+                if (i >= nwarmup) {
+                    total_ctime += local_ctime;
+                    total_tover_comm += local_tover_comm;
+                    total_tover_calc += local_tover_calc;
+                }
             }
             t2 = MPI_Wtime();
             time = (t2 - t1) / ncycles;
